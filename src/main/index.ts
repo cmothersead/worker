@@ -1,6 +1,7 @@
 import { app, shell, BrowserWindow, ipcMain } from 'electron'
 import { join } from 'path'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
+import { laneToLanes } from './scripts'
 import icon from '../../resources/icon.png?asset'
 
 function createWindow(): void {
@@ -49,8 +50,8 @@ app.whenReady().then(() => {
     optimizer.watchWindowShortcuts(window)
   })
 
-  // IPC test
-  ipcMain.on('ping', () => console.log('pong'))
+  // IPC
+  ipcMain.handle('laneToLane', laneToLanes)
 
   createWindow()
 
@@ -72,3 +73,8 @@ app.on('window-all-closed', () => {
 
 // In this file you can include the rest of your app"s specific main process
 // code. You can also put them in separate files and require them here.
+
+function test() {
+  console.log('test started')
+  return 'Test successful'
+}

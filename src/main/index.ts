@@ -71,7 +71,7 @@ app.whenReady().then(() => {
 	// IPC
 	ipcMain.handle(
 		'laneToLane',
-		async (_, { flightNumbers, headless }) => await laneToLanes({ flightNumbers, headless })
+		async (_, { flightNumbers, headless }) => await laneToLanes({ flightNumbers, headless, signal })
 	);
 	ipcMain.handle('limbo', async (_, { date, headless }) => await limbo(date, headless));
 	ipcMain.handle('interrupt', async () => {

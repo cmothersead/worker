@@ -1,5 +1,6 @@
 import { chromium } from 'playwright';
-import { dreuiReport, laneToLaneProcess, limboProcess, scorecard } from './browser.js';
+import { dreuiReport, limboProcess, scorecard } from './browser.js';
+import { laneToLaneProcess } from './laneToLane.js';
 // import { readFileSync } from 'fs'
 
 // const flightNumbers = [1609];
@@ -8,10 +9,12 @@ import { dreuiReport, laneToLaneProcess, limboProcess, scorecard } from './brows
 
 export async function laneToLanes({
 	flightNumbers,
-	headless
+	headless,
+	signal
 }: {
 	flightNumbers: number[];
 	headless: boolean;
+	signal: AbortSignal;
 }) {
 	const browser = await chromium.launch({ headless });
 	while (true) {
@@ -20,7 +23,8 @@ export async function laneToLanes({
 				browser.contexts()[0].close();
 			}
 			browser.newContext();
-			await laneToLaneProcess(browser, { flightNumbers }, '5260673', 'OldPosition1');
+			await laneToLaneProcess({ flightNumbers }, headless, '5260673', 'OldPosition1', signal);
+			return;
 		} catch (error) {
 			console.error(error);
 			continue;

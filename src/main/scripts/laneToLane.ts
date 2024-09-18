@@ -1,6 +1,6 @@
 import { copyFileSync, existsSync, mkdirSync, readdirSync, readFileSync, unlinkSync } from 'fs';
 import AdmZip from 'adm-zip';
-import { chromium, Download, Page } from 'playwright';
+import { chromium, Page } from 'playwright';
 
 const laneToLaneTemplatePath = 'C:/Users/5260673/OneDrive - MyFedEx/Documents/lanetolane.xlsx';
 const outputDirectory = 'C:/Users/5260673/OneDrive - MyFedEx/Communication/Control Room Files';
@@ -81,8 +81,10 @@ export async function laneToLaneProcess(
 		year: 'numeric'
 	});
 
+	if (signal.aborted) return;
 	deleteOldLaneToLanes(yesterday, outputDirectory);
 
+	if (signal.aborted) return;
 	if (flightNumbers) {
 		consNumbers = await lookupConsFromFlight({
 			flightNumbers,
@@ -93,6 +95,7 @@ export async function laneToLaneProcess(
 		});
 	}
 
+	if (signal.aborted) return;
 	const downloadPaths = await downloadReportData({
 		consNumbers,
 		signal,
@@ -101,6 +104,7 @@ export async function laneToLaneProcess(
 		headless
 	});
 
+	if (signal.aborted) return;
 	saveOutput(today, downloadPaths);
 }
 
@@ -189,17 +193,21 @@ async function downloadReportData({
 	password: string;
 	headless: boolean;
 }) {
-	return await new Promise<string[]>((resolve, reject) => {
-		let aborted = false;
+	return await new Promise<string | undefined[]>((resolve, reject) => {
 		(async () => {
 			const data = Promise.all(
 				consNumbers.map(async (consNumber) => {
+					if (signal.aborted) return;
+
 					const browser = await chromium.launch({ headless });
 					const page = await browser.newPage();
 					await page.goto(
 						'https://myapps-atl03.secure.fedex.com/consreport/displayReportMenuPage.do'
 					);
 					await signIn(page, username, password);
+
+					if (signal.aborted) return;
+
 					const dropdown = page.locator('select[name="reportType"]');
 					const selectReportButton = page.locator('input[value="Select Report"]');
 					const consNumbersField = page.locator('textarea[name="delimitedTrackingNumber"]');
@@ -208,16 +216,16 @@ async function downloadReportData({
 					const link = page.locator(
 						`a[href="/consreport/reportResultAction.do?method=exportCSV&consNumber=${consNumber}"]`
 					);
-					console.log('Opening CONS Report');
 					await dropdown.selectOption('ursalane');
 					await selectReportButton.click();
 					await consNumbersField.fill(consNumber);
 					await nestedCheckbox.click();
 					await queryReportButton.click();
-					console.log('Query processing...');
 					await page.bringToFront();
 
-					while (!aborted) {
+					if (signal.aborted) return;
+
+					while (!signal.aborted) {
 						try {
 							await link.waitFor({ timeout: 1000 });
 							break;
@@ -225,6 +233,9 @@ async function downloadReportData({
 							if (error.name !== 'TimeoutError') console.log(error);
 						}
 					}
+
+					if (signal.aborted) return;
+
 					const downloadPromise = page.waitForEvent('download');
 					await link.click();
 					const download = await downloadPromise;
@@ -238,7 +249,7 @@ async function downloadReportData({
 		})();
 
 		signal.addEventListener('abort', () => {
-			aborted = true;
+			console.log('abort received by download');
 			reject(new DOMException('User aborted', 'AbortError'));
 		});
 	});

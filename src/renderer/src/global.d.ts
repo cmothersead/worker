@@ -1,8 +1,8 @@
 import { ElectronAPI } from '@electron-toolkit/preload';
 
-declare global {
+export declare global {
 	interface Window {
 		electron: ElectronAPI;
-		api: { laneToLane };
+		api: { laneToLane; laneToLaneSucceeded; laneToLaneFailed; laneToLaneUpdateCONS };
 	}
 }

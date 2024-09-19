@@ -8,8 +8,8 @@ import { sign } from 'crypto';
 function createWindow(): void {
 	// Create the browser window.
 	const mainWindow = new BrowserWindow({
-		width: 900,
-		height: 670,
+		width: 1080,
+		height: 830,
 		show: false,
 		autoHideMenuBar: true,
 		...(process.platform === 'linux' ? { icon } : {}),
@@ -26,6 +26,23 @@ function createWindow(): void {
 	mainWindow.webContents.setWindowOpenHandler((details) => {
 		shell.openExternal(details.url);
 		return { action: 'deny' };
+	});
+
+	var controller = new AbortController();
+	var { signal } = controller;
+
+	// IPC
+	ipcMain.handle(
+		'laneToLane',
+		async (_, { flightNumbers, headless }) =>
+			await laneToLanes({ flightNumbers, headless, signal, window: mainWindow })
+	);
+	ipcMain.handle('limbo', async (_, { date, headless }) => await limbo(date, headless));
+	ipcMain.on('stop', () => {
+		console.log('aborting');
+		controller.abort();
+		controller = new AbortController();
+		signal = controller.signal;
 	});
 
 	// HMR for renderer base on electron-vite cli.
@@ -51,38 +68,6 @@ app.whenReady().then(() => {
 		optimizer.watchWindowShortcuts(window);
 	});
 
-	async function interruptMe(signal: AbortSignal) {
-		return await new Promise<void>((resolve, reject) => {
-			const test = async () => {
-				while (true) {
-					await new Promise((r) => setTimeout(r, 1000));
-					console.log('tick');
-				}
-			};
-
-			signal.addEventListener('abort', () => {
-				console.log('abort received');
-			});
-		});
-	}
-	const controller = new AbortController();
-	const { signal } = controller;
-
-	// IPC
-	ipcMain.handle(
-		'laneToLane',
-		async (_, { flightNumbers, headless }) => await laneToLanes({ flightNumbers, headless, signal })
-	);
-	ipcMain.handle('limbo', async (_, { date, headless }) => await limbo(date, headless));
-	ipcMain.handle('interrupt', async () => {
-		console.log('start ticking');
-		await interruptMe(signal);
-	});
-	ipcMain.on('stop', () => {
-		console.log('aborting');
-		controller.abort();
-	});
-
 	createWindow();
 
 	app.on('activate', function () {
@@ -103,8 +88,3 @@ app.on('window-all-closed', () => {
 
 // In this file you can include the rest of your app"s specific main process
 // code. You can also put them in separate files and require them here.
-
-function test() {
-	console.log('test started');
-	return 'Test successful';
-}

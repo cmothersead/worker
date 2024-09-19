@@ -1,6 +1,7 @@
 import { copyFileSync, existsSync, mkdirSync, readdirSync, readFileSync, unlinkSync } from 'fs';
 import AdmZip from 'adm-zip';
 import { chromium, Page } from 'playwright';
+import { BrowserWindow } from 'electron';
 
 const laneToLaneTemplatePath = 'C:/Users/5260673/OneDrive - MyFedEx/Documents/lanetolane.xlsx';
 const outputDirectory = 'C:/Users/5260673/OneDrive - MyFedEx/Communication/Control Room Files';
@@ -66,9 +67,11 @@ export async function laneToLaneProcess(
 	headless: boolean,
 	username: string,
 	password: string,
-	signal: AbortSignal
+	signal: AbortSignal,
+	window: BrowserWindow
 ) {
 	let { flightNumbers, consNumbers } = data;
+	window.webContents.send('log', 'Hello World');
 
 	//Get current date. If after midnight, use previous day
 	const today = new Date(Date.now());
@@ -82,7 +85,7 @@ export async function laneToLaneProcess(
 	});
 
 	if (signal.aborted) return;
-	deleteOldLaneToLanes(yesterday, outputDirectory);
+	deleteOldLaneToLanes(yesterday, outputDirectory, window);
 
 	if (signal.aborted) return;
 	if (flightNumbers) {
@@ -91,7 +94,8 @@ export async function laneToLaneProcess(
 			username,
 			password,
 			todayString,
-			headless
+			headless,
+			window
 		});
 	}
 
@@ -105,10 +109,10 @@ export async function laneToLaneProcess(
 	});
 
 	if (signal.aborted) return;
-	saveOutput(today, downloadPaths);
+	saveOutput(today, downloadPaths, window);
 }
 
-function deleteOldLaneToLanes(yesterday: Date, dir: string) {
+function deleteOldLaneToLanes(yesterday: Date, dir: string, window: BrowserWindow) {
 	const old = readdirSync(dir).filter((fileName) =>
 		fileName.includes(
 			`${yesterday.toLocaleDateString('en-us', {
@@ -118,7 +122,7 @@ function deleteOldLaneToLanes(yesterday: Date, dir: string) {
 	);
 
 	for (const oldFile of old) {
-		console.log(`Deleting file: ${oldFile}`);
+		window.webContents.send('log', `Deleting file: ${oldFile}`);
 		unlinkSync(`${dir}/${oldFile}`);
 	}
 }
@@ -137,13 +141,15 @@ async function lookupConsFromFlight({
 	username,
 	password,
 	todayString,
-	headless
+	headless,
+	window
 }: {
 	flightNumbers: (string | number)[];
 	username: string;
 	password: string;
 	todayString: string;
 	headless: boolean;
+	window: BrowserWindow;
 }) {
 	const browser = await chromium.launch({ headless });
 	const page = await browser.newPage();
@@ -173,9 +179,16 @@ async function lookupConsFromFlight({
 	const consNumberValues = await consNumberColumn.evaluateAll((elements) =>
 		elements.map((element) => element.innerText)
 	);
-	indexes.forEach((value, index) => {
-		if (value == -1) console.log(`Flight ${flightNumbers[index]} not found.`);
-	});
+	const fails = indexes
+		.map((value, index) => ({ value, flightNumber: flightNumbers[index] }))
+		.filter(({ value }) => value == -1)
+		.map(({ flightNumber }) => flightNumber);
+	window.webContents.send('laneToLane:fail', fails);
+	const cons = indexes.map((value, index) => ({
+		number: flightNumbers[index],
+		cons: consNumberValues[value]
+	}));
+	window.webContents.send('laneToLane:updateCONS', cons);
 	await page.close();
 	return indexes.map((index) => consNumberValues[index]).filter((consNumber) => !!consNumber);
 }
@@ -193,7 +206,7 @@ async function downloadReportData({
 	password: string;
 	headless: boolean;
 }) {
-	return await new Promise<string | undefined[]>((resolve, reject) => {
+	return await new Promise<string[]>((resolve, reject) => {
 		(async () => {
 			const data = Promise.all(
 				consNumbers.map(async (consNumber) => {
@@ -255,7 +268,7 @@ async function downloadReportData({
 	});
 }
 
-function saveOutput(today: Date, data: string[]) {
+function saveOutput(today: Date, data: string[], window: BrowserWindow) {
 	const root = archiveDirectory;
 	const monthDir = `${root}/${today.toLocaleDateString('en-us', {
 		month: '2-digit'
@@ -273,7 +286,6 @@ function saveOutput(today: Date, data: string[]) {
 	for (const dataString of data) {
 		const source = new AdmZip(laneToLaneTemplatePath);
 		const sheet = source.getEntry('xl/worksheets/sheet5.xml');
-		console.log('Processing...');
 		let flight = '';
 		let output = '<sheetData>';
 		const lines = dataString.split('\n');
@@ -305,6 +317,7 @@ function saveOutput(today: Date, data: string[]) {
 				month: '2-digit'
 			})}${today.toLocaleDateString('en-us', { day: '2-digit' })}.xlsx`
 		);
+		window.webContents.send('laneToLane:success', flight);
 		console.log(`Flight: ${flight} complete.`);
 	}
 }

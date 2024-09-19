@@ -99,17 +99,21 @@ export async function laneToLaneProcess(
 		});
 	}
 
-	if (signal.aborted) return;
-	const downloadPaths = await downloadReportData({
-		consNumbers,
-		signal,
-		username,
-		password,
-		headless
-	});
+	await Promise.all(
+		consNumbers.map(async (consNumber) => {
+			if (signal.aborted) return;
+			const downloadPath = await downloadReportData({
+				consNumber,
+				signal,
+				username,
+				password,
+				headless
+			});
 
-	if (signal.aborted) return;
-	saveOutput(today, downloadPaths, window);
+			if (signal.aborted) return;
+			saveOutput(today, downloadPath, window);
+		})
+	);
 }
 
 function deleteOldLaneToLanes(yesterday: Date, dir: string, window: BrowserWindow) {
@@ -194,70 +198,64 @@ async function lookupConsFromFlight({
 }
 
 async function downloadReportData({
-	consNumbers,
+	consNumber,
 	signal,
 	username,
 	password,
 	headless
 }: {
-	consNumbers: string[];
+	consNumber: string;
 	signal: AbortSignal;
 	username: string;
 	password: string;
 	headless: boolean;
 }) {
-	return await new Promise<string[]>((resolve, reject) => {
+	return await new Promise<string>((resolve, reject) => {
 		(async () => {
-			const data = Promise.all(
-				consNumbers.map(async (consNumber) => {
-					if (signal.aborted) return;
+			if (signal.aborted) return;
 
-					const browser = await chromium.launch({ headless });
-					const page = await browser.newPage();
-					await page.goto(
-						'https://myapps-atl03.secure.fedex.com/consreport/displayReportMenuPage.do'
-					);
-					await signIn(page, username, password);
+			const browser = await chromium.launch({ headless });
+			const page = await browser.newPage();
+			await page.goto('https://myapps-atl03.secure.fedex.com/consreport/displayReportMenuPage.do');
+			await signIn(page, username, password);
 
-					if (signal.aborted) return;
+			if (signal.aborted) return;
 
-					const dropdown = page.locator('select[name="reportType"]');
-					const selectReportButton = page.locator('input[value="Select Report"]');
-					const consNumbersField = page.locator('textarea[name="delimitedTrackingNumber"]');
-					const nestedCheckbox = page.locator('input[name="processNestedConsFlag"]');
-					const queryReportButton = page.locator('input[value="Query Report"]');
-					const link = page.locator(
-						`a[href="/consreport/reportResultAction.do?method=exportCSV&consNumber=${consNumber}"]`
-					);
-					await dropdown.selectOption('ursalane');
-					await selectReportButton.click();
-					await consNumbersField.fill(consNumber);
-					await nestedCheckbox.click();
-					await queryReportButton.click();
-					await page.bringToFront();
-
-					if (signal.aborted) return;
-
-					while (!signal.aborted) {
-						try {
-							await link.waitFor({ timeout: 1000 });
-							break;
-						} catch (error: any) {
-							if (error.name !== 'TimeoutError') console.log(error);
-						}
-					}
-
-					if (signal.aborted) return;
-
-					const downloadPromise = page.waitForEvent('download');
-					await link.click();
-					const download = await downloadPromise;
-					const path = await download.path();
-					const data = readFileSync(path).toString();
-					await browser.close();
-					return data;
-				})
+			const dropdown = page.locator('select[name="reportType"]');
+			const selectReportButton = page.locator('input[value="Select Report"]');
+			const consNumbersField = page.locator('textarea[name="delimitedTrackingNumber"]');
+			const nestedCheckbox = page.locator('input[name="processNestedConsFlag"]');
+			const queryReportButton = page.locator('input[value="Query Report"]');
+			const link = page.locator(
+				`a[href="/consreport/reportResultAction.do?method=exportCSV&consNumber=${consNumber}"]`
 			);
+			await dropdown.selectOption('ursalane');
+			await selectReportButton.click();
+			await consNumbersField.fill(consNumber);
+			await nestedCheckbox.click();
+			await queryReportButton.click();
+			await page.bringToFront();
+
+			if (signal.aborted) return;
+
+			while (!signal.aborted) {
+				try {
+					await link.waitFor({ timeout: 1000 });
+					break;
+				} catch (error: any) {
+					if (error.name !== 'TimeoutError') console.log(error);
+				}
+			}
+
+			if (signal.aborted) return;
+
+			const downloadPromise = page.waitForEvent('download');
+			await link.click();
+			const download = await downloadPromise;
+			const path = await download.path();
+			const data = readFileSync(path).toString();
+			await browser.close();
+
 			resolve(data);
 		})();
 
@@ -268,7 +266,7 @@ async function downloadReportData({
 	});
 }
 
-function saveOutput(today: Date, data: string[], window: BrowserWindow) {
+function saveOutput(today: Date, data, window: BrowserWindow) {
 	const root = archiveDirectory;
 	const monthDir = `${root}/${today.toLocaleDateString('en-us', {
 		month: '2-digit'
@@ -283,41 +281,39 @@ function saveOutput(today: Date, data: string[], window: BrowserWindow) {
 		mkdirSync(dayDir, { recursive: true });
 	}
 
-	for (const dataString of data) {
-		const source = new AdmZip(laneToLaneTemplatePath);
-		const sheet = source.getEntry('xl/worksheets/sheet5.xml');
-		let flight = '';
-		let output = '<sheetData>';
-		const lines = dataString.split('\n');
-		for (const line of lines) {
-			const values = line.split(',');
-			if (values.length === 4 && values[1] === 'Flight') flight = values[3];
-			output += '<row>';
-			for (let value of values) {
-				if (value.startsWith('="')) value = value.slice(2);
-				if (value.endsWith('"')) value = value.slice(0, -1);
-				output += `<c t="inlineStr"><is><t>${value}</t></is></c>`;
-			}
-			output += '</row>';
+	const source = new AdmZip(laneToLaneTemplatePath);
+	const sheet = source.getEntry('xl/worksheets/sheet5.xml');
+	let flight = '';
+	let output = '<sheetData>';
+	const lines = data.split('\n');
+	for (const line of lines) {
+		const values = line.split(',');
+		if (values.length === 4 && values[1] === 'Flight') flight = values[3];
+		output += '<row>';
+		for (let value of values) {
+			if (value.startsWith('="')) value = value.slice(2);
+			if (value.endsWith('"')) value = value.slice(0, -1);
+			output += `<c t="inlineStr"><is><t>${value}</t></is></c>`;
 		}
-		output += '</sheetData>';
-		const newData = sheet.getData().toString().replace('<sheetData/>', output);
-		sheet.setData(newData);
-
-		source.writeZip(
-			`${outputDirectory}/F${flight} ${dests[flight]} ${today.toLocaleDateString('en-us', {
-				month: '2-digit'
-			})}${today.toLocaleDateString('en-us', { day: '2-digit' })}.xlsx`
-		);
-		copyFileSync(
-			`${outputDirectory}/F${flight} ${dests[flight]} ${today.toLocaleDateString('en-us', {
-				month: '2-digit'
-			})}${today.toLocaleDateString('en-us', { day: '2-digit' })}.xlsx`,
-			`${dayDir}/Lane to Lane - ${flight}-${dests[flight]} - ${today.toLocaleDateString('en-us', {
-				month: '2-digit'
-			})}${today.toLocaleDateString('en-us', { day: '2-digit' })}.xlsx`
-		);
-		window.webContents.send('laneToLane:success', flight);
-		console.log(`Flight: ${flight} complete.`);
+		output += '</row>';
 	}
+	output += '</sheetData>';
+	const newData = sheet.getData().toString().replace('<sheetData/>', output);
+	sheet.setData(newData);
+
+	source.writeZip(
+		`${outputDirectory}/F${flight} ${dests[flight]} ${today.toLocaleDateString('en-us', {
+			month: '2-digit'
+		})}${today.toLocaleDateString('en-us', { day: '2-digit' })}.xlsx`
+	);
+	copyFileSync(
+		`${outputDirectory}/F${flight} ${dests[flight]} ${today.toLocaleDateString('en-us', {
+			month: '2-digit'
+		})}${today.toLocaleDateString('en-us', { day: '2-digit' })}.xlsx`,
+		`${dayDir}/Lane to Lane - ${flight}-${dests[flight]} - ${today.toLocaleDateString('en-us', {
+			month: '2-digit'
+		})}${today.toLocaleDateString('en-us', { day: '2-digit' })}.xlsx`
+	);
+	window.webContents.send('laneToLane:success', flight);
+	console.log(`Flight: ${flight} complete.`);
 }

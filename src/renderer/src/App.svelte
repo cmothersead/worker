@@ -22,7 +22,7 @@
 		done: 'icon-park-solid:check-one'
 	};
 
-	let headless = false;
+	let headless = true;
 	let l2lRunning = false;
 	let limboRunning = false;
 	async function laneToLanes() {

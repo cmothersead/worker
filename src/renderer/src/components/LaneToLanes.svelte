@@ -47,6 +47,9 @@
 			...existing.find(({ number }) => number === flight.number)
 		}));
 	}
+	async function getCONS() {
+		window.api.laneToLane.cons({ flightNumbers, headless });
+	}
 
 	function stop() {
 		window.electron.ipcRenderer.send('stop');
@@ -69,13 +72,14 @@
 	}
 
 	getExisting();
+	getCONS();
 </script>
 
-<div class="flex flex-col bg-slate-400 p-4">
-	<h1 class="text-lg font-bold">Lane to Lanes</h1>
+<div class="flex flex-col bg-slate-400 p-4 rounded-lg">
+	<h1 class="text-xl font-bold">Lane to Lanes</h1>
 	<div>
 		<button
-			class="rounded p-2 bg-green-500"
+			class="rounded px-2 bg-green-400"
 			class:bg-slate-400={l2lRunning}
 			class:cursor-wait={l2lRunning}
 			on:click={laneToLanes}
@@ -90,7 +94,7 @@
 	<p class="font-bold">Flights</p>
 	<ul class="flex flex-col gap-2 py-2">
 		{#each laneToLaneOutput as flight}
-			<li class="bg-slate-100 py-2 px-4">
+			<li class="bg-slate-100 py-2 px-4 rounded">
 				<div class="flex items-center justify-between">
 					<div class="flex items-center gap-2">
 						<div class="text-3xl font-bold">{flight.number}</div>
@@ -118,7 +122,12 @@
 						{/if}
 					</div>
 				</div>
-				<div class="text-sm"><span class="font-bold italic">CONS:</span> {flight.cons}</div>
+				<div class="text-sm flex items-center gap-1">
+					<span class="font-bold italic">CONS:</span>
+					{#if flight.cons == ''}<Icon icon={statusIcons['loading']} />
+					{:else}<span>{flight.cons}</span>
+					{/if}
+				</div>
 			</li>
 		{/each}
 	</ul>

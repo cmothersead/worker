@@ -1,6 +1,6 @@
 import { chromium } from 'playwright';
 import { dreuiReport, limboProcess, scorecard } from './browser.js';
-import { laneToLaneProcess } from './laneToLane.js';
+import { laneToLanes } from './laneToLane.js';
 import { BrowserWindow } from 'electron';
 // import { readFileSync } from 'fs'
 
@@ -26,11 +26,10 @@ export async function laneToLanes({
 				browser.contexts()[0].close();
 			}
 			browser.newContext();
-			await laneToLaneProcess(
+			await laneToLanes(
 				{ flightNumbers },
 				headless,
-				'5260673',
-				'OldPosition1',
+
 				signal,
 				window
 			);

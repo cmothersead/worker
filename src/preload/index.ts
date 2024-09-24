@@ -9,6 +9,7 @@ const api = {
 			ipcRenderer.on('laneToLane:update', (_event, value) => callback(_event, value)),
 		getExisting: (flightNumbers: number[]) =>
 			ipcRenderer.invoke('laneToLane:existing', flightNumbers),
+		cons: (args) => ipcRenderer.send('laneToLane:cons', args),
 		open: (path: string) => ipcRenderer.send('laneToLane:open', path)
 	},
 	scorecard: {

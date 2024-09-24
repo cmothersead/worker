@@ -1,10 +1,13 @@
 import { app, shell, BrowserWindow, ipcMain } from 'electron';
 import { join } from 'path';
 import { electronApp, optimizer, is } from '@electron-toolkit/utils';
-import { laneToLanes, limbo } from './scripts';
+import { limbo } from './scripts';
 import icon from '../../resources/icon.png?asset';
-import { getExistingLaneToLanes } from './scripts/laneToLane';
+import { getCONSNumbers, getExistingLaneToLanes, laneToLanes } from './scripts/laneToLane';
 import { scorecard } from './scripts/browser';
+
+const username = '5260673';
+const password = 'OldPosition1';
 
 function createWindow(): void {
 	// Create the browser window.
@@ -36,7 +39,19 @@ function createWindow(): void {
 	ipcMain.on(
 		'laneToLane',
 		async (_, { flightNumbers, headless }) =>
-			await laneToLanes({ flightNumbers, headless, signal, window: mainWindow })
+			await laneToLanes({
+				data: { flightNumbers },
+				headless,
+				signal,
+				window: mainWindow,
+				username,
+				password
+			})
+	);
+	ipcMain.on(
+		'laneToLane:cons',
+		async (_, { flightNumbers, headless }) =>
+			await getCONSNumbers({ flightNumbers, headless, window: mainWindow, username, password })
 	);
 	ipcMain.on('laneToLane:open', (_, path) => shell.openPath(path));
 	ipcMain.handle('laneToLane:existing', (_, flightNumbers) =>

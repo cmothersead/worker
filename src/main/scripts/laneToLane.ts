@@ -62,24 +62,25 @@ const dests = {
 	1682: 'BNA'
 };
 
-export async function laneToLaneProcess(
+export async function laneToLanes({
 	data,
-	headless: boolean,
-	username: string,
-	password: string,
-	signal: AbortSignal,
-	window: BrowserWindow
-) {
+	headless,
+	username,
+	password,
+	signal,
+	window
+}: {
+	data: { flightNumbers?: number[]; consNumbers?: string[] };
+	headless: boolean;
+	username: string;
+	password: string;
+	signal: AbortSignal;
+	window: BrowserWindow;
+}) {
 	let { flightNumbers, consNumbers } = data;
-	window.webContents.send('log', 'Hello World');
 
 	const today = getToday();
 	const yesterday = getYesterday();
-	const todayString = today.toLocaleDateString('en-us', {
-		month: 'long',
-		day: 'numeric',
-		year: 'numeric'
-	});
 
 	if (signal.aborted) return;
 	deleteOldLaneToLanes(yesterday, outputDirectory, window);
@@ -90,12 +91,13 @@ export async function laneToLaneProcess(
 			flightNumbers,
 			username,
 			password,
-			todayString,
+			today,
 			headless,
 			window
 		});
 	}
 
+	if (consNumbers == undefined) return;
 	await Promise.all(
 		consNumbers.map(async (consNumber) => {
 			if (signal.aborted) return;
@@ -124,6 +126,29 @@ export function getExistingLaneToLanes(flightNumbers: number[]) {
 			status: 'done'
 		}))
 		.filter(({ path }) => existsSync(path));
+}
+
+export async function getCONSNumbers({
+	flightNumbers,
+	headless,
+	username,
+	password,
+	window
+}: {
+	flightNumbers: number[];
+	headless: boolean;
+	username: string;
+	password: string;
+	window: BrowserWindow;
+}) {
+	await lookupConsFromFlight({
+		flightNumbers,
+		headless,
+		username,
+		password,
+		window,
+		today: getToday()
+	});
 }
 
 function getToday() {
@@ -168,17 +193,22 @@ async function lookupConsFromFlight({
 	flightNumbers,
 	username,
 	password,
-	todayString,
+	today,
 	headless,
 	window
 }: {
 	flightNumbers: (string | number)[];
 	username: string;
 	password: string;
-	todayString: string;
+	today: Date;
 	headless: boolean;
 	window: BrowserWindow;
 }) {
+	const todayString = today.toLocaleDateString('en-us', {
+		month: 'long',
+		day: 'numeric',
+		year: 'numeric'
+	});
 	const browser = await chromium.launch({ headless });
 	const page = await browser.newPage();
 	await page.goto('https://myapps-atl03.secure.fedex.com/consreport/explorer/');

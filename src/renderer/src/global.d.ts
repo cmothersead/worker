@@ -8,6 +8,7 @@ export declare global {
 				run;
 				receiveUpdate;
 				getExisting: (flightNumbers: number[]) => Promise<any>;
+				cons;
 				open: (path: string) => void;
 			};
 			scorecard: {

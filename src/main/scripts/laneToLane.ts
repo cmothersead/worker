@@ -73,11 +73,8 @@ export async function laneToLaneProcess(
 	let { flightNumbers, consNumbers } = data;
 	window.webContents.send('log', 'Hello World');
 
-	//Get current date. If after midnight, use previous day
-	const today = new Date(Date.now());
-	if (today.getHours() < 11) today.setDate(today.getDate() - 1);
-	const yesterday = new Date(today);
-	yesterday.setDate(yesterday.getDate() - 1);
+	const today = getToday();
+	const yesterday = getYesterday();
 	const todayString = today.toLocaleDateString('en-us', {
 		month: 'long',
 		day: 'numeric',
@@ -114,6 +111,33 @@ export async function laneToLaneProcess(
 			saveOutput(today, downloadPath, window);
 		})
 	);
+}
+
+export function getExistingLaneToLanes(flightNumbers: number[]) {
+	const today = getToday();
+	return flightNumbers
+		.map((flight) => ({
+			number: flight,
+			path: `${outputDirectory}/F${flight} ${dests[flight]} ${today.toLocaleDateString('en-us', {
+				month: '2-digit'
+			})}${today.toLocaleDateString('en-us', { day: '2-digit' })}.xlsx`,
+			status: 'done'
+		}))
+		.filter(({ path }) => existsSync(path));
+}
+
+function getToday() {
+	//Get current date. If after midnight, use previous day
+	const today = new Date(Date.now());
+	if (today.getHours() < 11) today.setDate(today.getDate() - 1);
+	return today;
+}
+
+function getYesterday() {
+	const today = getToday();
+	const yesterday = new Date(today);
+	yesterday.setDate(yesterday.getDate() - 1);
+	return yesterday;
 }
 
 function deleteOldLaneToLanes(yesterday: Date, dir: string, window: BrowserWindow) {
@@ -186,13 +210,13 @@ async function lookupConsFromFlight({
 	const fails = indexes
 		.map((value, index) => ({ value, flightNumber: flightNumbers[index] }))
 		.filter(({ value }) => value == -1)
-		.map(({ flightNumber }) => flightNumber);
-	window.webContents.send('laneToLane:fail', fails);
+		.map(({ flightNumber }) => ({ number: flightNumber, status: 'error' }));
+	window.webContents.send('laneToLane:update', fails);
 	const cons = indexes.map((value, index) => ({
 		number: flightNumbers[index],
 		cons: consNumberValues[value]
 	}));
-	window.webContents.send('laneToLane:updateCONS', cons);
+	window.webContents.send('laneToLane:update', cons);
 	await page.close();
 	return indexes.map((index) => consNumberValues[index]).filter((consNumber) => !!consNumber);
 }
@@ -212,51 +236,66 @@ async function downloadReportData({
 }) {
 	return await new Promise<string>((resolve, reject) => {
 		(async () => {
-			if (signal.aborted) return;
-
-			const browser = await chromium.launch({ headless });
-			const page = await browser.newPage();
-			await page.goto('https://myapps-atl03.secure.fedex.com/consreport/displayReportMenuPage.do');
-			await signIn(page, username, password);
-
-			if (signal.aborted) return;
-
-			const dropdown = page.locator('select[name="reportType"]');
-			const selectReportButton = page.locator('input[value="Select Report"]');
-			const consNumbersField = page.locator('textarea[name="delimitedTrackingNumber"]');
-			const nestedCheckbox = page.locator('input[name="processNestedConsFlag"]');
-			const queryReportButton = page.locator('input[value="Query Report"]');
-			const link = page.locator(
-				`a[href="/consreport/reportResultAction.do?method=exportCSV&consNumber=${consNumber}"]`
-			);
-			await dropdown.selectOption('ursalane');
-			await selectReportButton.click();
-			await consNumbersField.fill(consNumber);
-			await nestedCheckbox.click();
-			await queryReportButton.click();
-			await page.bringToFront();
-
-			if (signal.aborted) return;
-
-			while (!signal.aborted) {
+			while (true) {
 				try {
-					await link.waitFor({ timeout: 1000 });
+					if (signal.aborted) return;
+
+					const browser = await chromium.launch({ headless });
+					const page = await browser.newPage();
+					await page.goto(
+						'https://myapps-atl03.secure.fedex.com/consreport/displayReportMenuPage.do'
+					);
+					await signIn(page, username, password);
+
+					if (signal.aborted) return;
+
+					const dropdown = page.locator('select[name="reportType"]');
+					const selectReportButton = page.locator('input[value="Select Report"]');
+					const consNumbersField = page.locator('textarea[name="delimitedTrackingNumber"]');
+					const nestedCheckbox = page.locator('input[name="processNestedConsFlag"]');
+					const queryReportButton = page.locator('input[value="Query Report"]');
+					const link = page.locator(
+						`a[href="/consreport/reportResultAction.do?method=exportCSV&consNumber=${consNumber}"]`
+					);
+					const reportError = page.getByText('An error has occurred. Please try again.');
+					await dropdown.selectOption('ursalane');
+					await selectReportButton.click();
+					await consNumbersField.fill(consNumber);
+					await nestedCheckbox.click();
+					await queryReportButton.click();
+					await page.bringToFront();
+
+					if (signal.aborted) return;
+
+					while (!signal.aborted) {
+						try {
+							await reportError.waitFor({ timeout: 10 });
+							browser.close();
+							break;
+						} catch (error: any) {
+							if (error.name !== 'TimeoutError') console.error(error);
+						}
+						try {
+							await link.waitFor({ timeout: 1000 });
+							break;
+						} catch (error: any) {
+							if (error.name !== 'TimeoutError') console.error(error);
+						}
+					}
+
+					if (signal.aborted) return;
+
+					const downloadPromise = page.waitForEvent('download');
+					await link.click();
+					const download = await downloadPromise;
+					const path = await download.path();
+					const data = readFileSync(path).toString();
+					await browser.close();
+
+					resolve(data);
 					break;
-				} catch (error: any) {
-					if (error.name !== 'TimeoutError') console.log(error);
-				}
+				} catch {}
 			}
-
-			if (signal.aborted) return;
-
-			const downloadPromise = page.waitForEvent('download');
-			await link.click();
-			const download = await downloadPromise;
-			const path = await download.path();
-			const data = readFileSync(path).toString();
-			await browser.close();
-
-			resolve(data);
 		})();
 
 		signal.addEventListener('abort', () => {
@@ -314,6 +353,6 @@ function saveOutput(today: Date, data, window: BrowserWindow) {
 			month: '2-digit'
 		})}${today.toLocaleDateString('en-us', { day: '2-digit' })}.xlsx`
 	);
-	window.webContents.send('laneToLane:success', flight);
+	window.webContents.send('laneToLane:update', { number: parseInt(flight), status: 'done' });
 	console.log(`Flight: ${flight} complete.`);
 }

@@ -3,7 +3,8 @@ import { join } from 'path';
 import { electronApp, optimizer, is } from '@electron-toolkit/utils';
 import { laneToLanes, limbo } from './scripts';
 import icon from '../../resources/icon.png?asset';
-import { sign } from 'crypto';
+import { getExistingLaneToLanes } from './scripts/laneToLane';
+import { scorecard } from './scripts/browser';
 
 function createWindow(): void {
 	// Create the browser window.
@@ -32,12 +33,17 @@ function createWindow(): void {
 	var { signal } = controller;
 
 	// IPC
-	ipcMain.handle(
+	ipcMain.on(
 		'laneToLane',
 		async (_, { flightNumbers, headless }) =>
 			await laneToLanes({ flightNumbers, headless, signal, window: mainWindow })
 	);
+	ipcMain.on('laneToLane:open', (_, path) => shell.openPath(path));
+	ipcMain.handle('laneToLane:existing', (_, flightNumbers) =>
+		getExistingLaneToLanes(flightNumbers)
+	);
 	ipcMain.handle('limbo', async (_, { date, headless }) => await limbo(date, headless));
+	ipcMain.handle('scorecard:run', async (_, trackingNumbers) => await scorecard(trackingNumbers));
 	ipcMain.on('stop', () => {
 		console.log('aborting');
 		controller.abort();

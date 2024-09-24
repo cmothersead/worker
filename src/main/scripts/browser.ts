@@ -70,7 +70,7 @@ export async function limboProcess(browser, customDate) {
 		.filter(
 			(values) =>
 				values['LIMBO Location'].includes('IND') &&
-				['B4 22:00', '22:00-22:59', '23:00-23:59', '00:00-00:29'].includes(
+				['B4 22:00', '22:00-22:59', '23:00-23:59', '00:00-00:29', '00:30-00:59'].includes(
 					values['At MSL First Scan Window']
 				)
 		);
@@ -478,7 +478,7 @@ export async function scorecard(trackingNumbers) {
 	unzipData.splice(4, 0, unzipCommData[1]);
 	const outputData = _.zip(...unzipData);
 	writeFileSync(
-		'out.csv',
+		'C:/Users/5260673/Downloads/out.csv',
 		outputData.map((line) => line.map((item) => `"${item}"`).join(',')).join('\n')
 	);
 }
@@ -499,7 +499,7 @@ export async function dreuiReport(config, trackingNumbers) {
 }
 
 export async function dreuiSession(config, trackingNumbers) {
-	const browser = await chromium.launch();
+	const browser = await chromium.launch({ headless: false });
 	const page = await browser.newPage();
 	await page.goto(
 		'https://emars-tssrealtime-las.g.fedex.com:8001/spotfire/wp/analysis?file=/DRE/DREReport/AnalysisFiles/DREReport&waid=IwquIJCnk0yWrdYUHb8A6-17132565edpaLr&wavid=0'
@@ -549,7 +549,7 @@ export async function dreuiSession(config, trackingNumbers) {
 
 	await executeButton.click();
 	await waitForLoad(page);
-	await output.click({ button: 'right', timeout: 30000 });
+	await output.click({ button: 'right', timeout: 300000 });
 	await exportButton.click();
 
 	const downloadPromise = page.waitForEvent('download');

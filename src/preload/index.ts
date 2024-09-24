@@ -3,13 +3,17 @@ import { electronAPI } from '@electron-toolkit/preload';
 
 // Custom APIs for renderer
 const api = {
-	laneToLane: (args) => ipcRenderer.invoke('laneToLane', args),
-	laneToLaneFailed: (callback) =>
-		ipcRenderer.on('laneToLane:fail', (_event, value) => callback(_event, value)),
-	laneToLaneSucceeded: (callback) =>
-		ipcRenderer.on('laneToLane:success', (_event, value) => callback(_event, value)),
-	laneToLaneUpdateCONS: (callback) =>
-		ipcRenderer.on('laneToLane:updateCONS', (_event, value) => callback(_event, value))
+	laneToLane: {
+		run: (args) => ipcRenderer.send('laneToLane', args),
+		receiveUpdate: (callback) =>
+			ipcRenderer.on('laneToLane:update', (_event, value) => callback(_event, value)),
+		getExisting: (flightNumbers: number[]) =>
+			ipcRenderer.invoke('laneToLane:existing', flightNumbers),
+		open: (path: string) => ipcRenderer.send('laneToLane:open', path)
+	},
+	scorecard: {
+		run: (trackingNumbers: number[]) => ipcRenderer.invoke('scorecard:run', trackingNumbers)
+	}
 };
 
 // Use `contextBridge` APIs to expose Electron APIs to

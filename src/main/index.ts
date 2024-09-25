@@ -5,6 +5,7 @@ import { limbo } from './scripts';
 import icon from '../../resources/icon.png?asset';
 import { getCONSNumbers, getExistingLaneToLanes, laneToLanes } from './scripts/laneToLane';
 import { scorecard } from './scripts/browser';
+import { testStuff } from './scripts/monitor';
 
 const username = '5260673';
 const password = 'OldPosition1';
@@ -65,6 +66,7 @@ function createWindow(): void {
 		controller = new AbortController();
 		signal = controller.signal;
 	});
+	ipcMain.on('test', () => testStuff());
 
 	// HMR for renderer base on electron-vite cli.
 	// Load the remote URL for development or the local html file for production.

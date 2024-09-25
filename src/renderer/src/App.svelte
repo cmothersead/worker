@@ -2,7 +2,7 @@
 	import { LaneToLanes, Limbo, Scorecard } from './components';
 	let headless = true;
 
-	window.electron.ipcRenderer.on('log', (_, msg) => console.log(msg));
+	window.electron.ipcRenderer.send('test');
 </script>
 
 <div class="container mx-auto my-10">

@@ -452,7 +452,7 @@ async function waitForLoad(page) {
 	await loader.waitFor({ state: 'hidden', timeout: 480000 });
 }
 
-export async function scorecard(trackingNumbers) {
+export async function scorecard(trackingNumbers: number[]) {
 	const getData = async () => {
 		const data = await dreuiReport(scorecardConfig, trackingNumbers);
 		console.log(data.length);

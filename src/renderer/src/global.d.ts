@@ -11,6 +11,9 @@ export declare global {
 				cons;
 				open: (path: string) => void;
 			};
+			limbo: {
+				run;
+			};
 			scorecard: {
 				run;
 			};

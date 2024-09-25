@@ -12,6 +12,9 @@ const api = {
 		cons: (args) => ipcRenderer.send('laneToLane:cons', args),
 		open: (path: string) => ipcRenderer.send('laneToLane:open', path)
 	},
+	limbo: {
+		run: (args) => ipcRenderer.send('limbo:run', args)
+	},
 	scorecard: {
 		run: (trackingNumbers: number[]) => ipcRenderer.invoke('scorecard:run', trackingNumbers)
 	}

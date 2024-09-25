@@ -2,6 +2,7 @@ import { copyFileSync, existsSync, mkdirSync, readdirSync, readFileSync, unlinkS
 import AdmZip from 'adm-zip';
 import { chromium, Page } from 'playwright';
 import { BrowserWindow } from 'electron';
+import { getToday, getYesterday } from '.';
 
 const laneToLaneTemplatePath = 'C:/Users/5260673/OneDrive - MyFedEx/Documents/lanetolane.xlsx';
 const outputDirectory = 'C:/Users/5260673/OneDrive - MyFedEx/Communication/Control Room Files';
@@ -149,20 +150,6 @@ export async function getCONSNumbers({
 		window,
 		today: getToday()
 	});
-}
-
-function getToday() {
-	//Get current date. If after midnight, use previous day
-	const today = new Date(Date.now());
-	if (today.getHours() < 11) today.setDate(today.getDate() - 1);
-	return today;
-}
-
-function getYesterday() {
-	const today = getToday();
-	const yesterday = new Date(today);
-	yesterday.setDate(yesterday.getDate() - 1);
-	return yesterday;
 }
 
 function deleteOldLaneToLanes(yesterday: Date, dir: string, window: BrowserWindow) {

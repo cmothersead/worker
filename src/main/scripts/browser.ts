@@ -499,7 +499,7 @@ export async function dreuiReport(config, trackingNumbers) {
 }
 
 export async function dreuiSession(config, trackingNumbers) {
-	const browser = await chromium.launch({ headless: false });
+	const browser = await chromium.launch({ headless: true });
 	const page = await browser.newPage();
 	await page.goto(
 		'https://emars-tssrealtime-las.g.fedex.com:8001/spotfire/wp/analysis?file=/DRE/DREReport/AnalysisFiles/DREReport&waid=IwquIJCnk0yWrdYUHb8A6-17132565edpaLr&wavid=0'

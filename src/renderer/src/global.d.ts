@@ -13,6 +13,7 @@ export declare global {
 			};
 			limbo: {
 				run;
+				receiveUpdate;
 			};
 			scorecard: {
 				run;

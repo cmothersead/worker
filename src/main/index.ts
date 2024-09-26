@@ -58,7 +58,7 @@ function createWindow(): void {
 	ipcMain.handle('laneToLane:existing', (_, flightNumbers) =>
 		getExistingLaneToLanes(flightNumbers)
 	);
-	ipcMain.handle('limbo', async (_, { date, headless }) => await limbo(date, headless));
+	ipcMain.on('limbo:run', async (_, { date, headless }) => await limbo(date, mainWindow, headless));
 	ipcMain.handle('scorecard:run', async (_, trackingNumbers) => await scorecard(trackingNumbers));
 	ipcMain.on('stop', () => {
 		console.log('aborting');

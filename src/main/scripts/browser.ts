@@ -4,10 +4,11 @@ import AdmZip from 'adm-zip';
 import _ from 'lodash';
 import { parse } from 'csv-parse/sync';
 import { commCommentAllConfig, limboConfig, scorecardConfig } from './dreuiConfigs.js';
+import { BrowserWindow } from 'electron';
 
 const blankTemplate = 'C:/Users/5260673/ONeDrive - MyFedEx/Documents/blank.xlsx';
 
-export async function limboProcess(browser, customDate) {
+export async function limboProcess(browser, customDate, window: BrowserWindow) {
 	const page = await browser.newPage();
 	await page.goto(
 		'https://emars-express-las.g.fedex.com:8001/spotfire/wp/analysis?file=/BT/GSQA/LIMBO/AnalysisFiles/LIMBO&waid=gshklIgVHEaeDVbdZbPXH-0921566a8acoJP&wavid=0'
@@ -119,6 +120,9 @@ export async function limboProcess(browser, customDate) {
 	);
 	// console.log(originOutput);
 	console.log(`Top Origin: ${originOutput[2].at(0).value} - ${originOutput[2].at(-1).value}`);
+	window.webContents.send('limbo:update', {
+		topOrigin: { code: originOutput[2].at(0).value, quantity: originOutput[2].at(-1).value }
+	});
 	const topOrigin = originOutput[2][0].value;
 
 	const groupedByDestination = {
@@ -163,6 +167,9 @@ export async function limboProcess(browser, customDate) {
 		})
 	);
 	console.log(`Top Destination: ${destOutput[2].at(0).value} - ${destOutput[2].at(-1).value}`);
+	window.webContents.send('limbo:update', {
+		topDestination: { code: destOutput[2].at(0).value, quantity: destOutput[2].at(-1).value }
+	});
 	const topDest = destOutput[2][0].value;
 
 	const blank = new AdmZip(blankTemplate);

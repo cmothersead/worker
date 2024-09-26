@@ -13,7 +13,9 @@ const api = {
 		open: (path: string) => ipcRenderer.send('laneToLane:open', path)
 	},
 	limbo: {
-		run: (args) => ipcRenderer.send('limbo:run', args)
+		run: (args) => ipcRenderer.send('limbo:run', args),
+		receiveUpdate: (callback) =>
+			ipcRenderer.on('limbo:update', (_event, value) => callback(_event, value))
 	},
 	scorecard: {
 		run: (trackingNumbers: number[]) => ipcRenderer.invoke('scorecard:run', trackingNumbers)

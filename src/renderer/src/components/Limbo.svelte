@@ -5,6 +5,10 @@
 	let limboRunning = false;
 	let settings = false;
 	let latestIndex = 0;
+	let output: {
+		topOrigin?: { code: string; quantity: number };
+		topDestination?: { code: string; quantity: number };
+	} = {};
 
 	const latestValues = [
 		{ value: 'B4 22:00', display: '22:00' },
@@ -25,8 +29,17 @@
 
 	async function limbo() {
 		limboRunning = true;
-		await window.api.limbo.run({ headless });
+		const today = new Date(Date.now());
+		if (today.getHours() < 11) today.setDate(today.getDate() - 1);
+		await window.api.limbo.run({ date: today, headless });
 	}
+
+	window.api.limbo.receiveUpdate((_, value) => {
+		output = {
+			...output,
+			...value
+		};
+	});
 </script>
 
 <div class="bg-slate-400 p-4 rounded-lg">
@@ -62,13 +75,15 @@
 			<div>
 				<span class="font-bold">Top Origin:</span>
 				<div class="flex justify-center items-center gap-4">
-					<span class="text-2xl font-bold">IND</span> <span class="text-xl">305</span>
+					<span class="text-2xl font-bold">{output.topOrigin?.code ?? ''}</span>
+					<span class="text-xl">{output.topOrigin?.quantity ?? ''}</span>
 				</div>
 			</div>
 			<div>
 				<span class="font-bold">Top Destination:</span>
 				<div class="flex justify-center items-center gap-4">
-					<span class="text-2xl font-bold">IND</span> <span class="text-xl">305</span>
+					<span class="text-2xl font-bold">{output.topDestination?.code ?? ''}</span>
+					<span class="text-xl">{output.topDestination?.quantity ?? ''}</span>
 				</div>
 			</div>
 		</div>

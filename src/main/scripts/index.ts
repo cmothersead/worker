@@ -1,5 +1,6 @@
 import { chromium } from 'playwright';
 import { dreuiReport, limboProcess, scorecard } from './browser.js';
+import { BrowserWindow } from 'electron';
 // import { readFileSync } from 'fs'
 
 // const flightNumbers = [1609];
@@ -20,7 +21,7 @@ export function getYesterday() {
 	return yesterday;
 }
 
-export async function limbo(date: Date, headless = true) {
+export async function limbo(date: Date, window: BrowserWindow, headless = true) {
 	const browser = await chromium.launch({ headless });
-	await limboProcess(browser, date);
+	await limboProcess(browser, date, window);
 }

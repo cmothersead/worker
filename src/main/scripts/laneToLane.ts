@@ -1,5 +1,6 @@
 import { copyFileSync, existsSync, mkdirSync, readdirSync, readFileSync, unlinkSync } from 'fs';
 import AdmZip from 'adm-zip';
+import Excel from 'exceljs';
 import { chromium, Page } from 'playwright';
 import { BrowserWindow } from 'electron';
 import { getToday, getYesterday } from '.';
@@ -111,7 +112,7 @@ export async function laneToLanes({
 			});
 
 			if (signal.aborted) return;
-			saveOutput(today, downloadPath, window);
+			await saveOutput(today, downloadPath, window);
 		})
 	);
 }
@@ -322,7 +323,7 @@ async function downloadReportData({
 	});
 }
 
-function saveOutput(today: Date, data, window: BrowserWindow) {
+async function saveOutput(today: Date, dataString: string, window: BrowserWindow) {
 	const root = archiveDirectory;
 	const monthDir = `${root}/${today.toLocaleDateString('en-us', {
 		month: '2-digit'
@@ -341,7 +342,7 @@ function saveOutput(today: Date, data, window: BrowserWindow) {
 	const sheet = source.getEntry('xl/worksheets/sheet5.xml');
 	let flight = '';
 	let output = '<sheetData>';
-	const lines = data.split('\n');
+	const lines = dataString.split('\n');
 	for (const line of lines) {
 		const values = line.split(',');
 		if (values.length === 4 && values[1] === 'Flight') flight = values[3];
@@ -362,6 +363,35 @@ function saveOutput(today: Date, data, window: BrowserWindow) {
 			month: '2-digit'
 		})}${today.toLocaleDateString('en-us', { day: '2-digit' })}.xlsx`
 	);
+
+	// const source = new Excel.Workbook();
+	// await source.xlsx.readFile(laneToLaneTemplatePath);
+	// source.calcProperties.fullCalcOnLoad = true;
+
+	// const dataSheet = source.getWorksheet('Raw Data');
+	// if (!dataSheet) throw new Error('Data sheet not found in template.');
+	// // console.log(source.worksheets.map((sheet) => sheet.name));
+	// const data = dataString.split('\n').map((line) =>
+	// 	line.split(',').map((value) => {
+	// 		if (value.startsWith('="')) value = value.slice(2);
+	// 		if (value.endsWith('"')) value = value.slice(0, -1);
+	// 		if (Number.isSafeInteger(parseInt(value))) value = parseInt(value);
+	// 		return value;
+	// 	})
+	// );
+	// const flight = data.find((line) => line.length === 4 && line[1] === 'Flight')?.at(3);
+	// if (!flight) throw new Error('Flight number not found in output data');
+
+	// dataSheet.addRows(data);
+	// dataSheet.getColumn('A').numFmt = '0';
+	// dataSheet.getColumn('A').width = 13;
+
+	// await source.xlsx.writeFile(
+	// 	`${outputDirectory}/F${flight} ${dests[flight]} ${today.toLocaleDateString('en-us', {
+	// 		month: '2-digit'
+	// 	})}${today.toLocaleDateString('en-us', { day: '2-digit' })}.xlsx`
+	// );
+
 	copyFileSync(
 		`${outputDirectory}/F${flight} ${dests[flight]} ${today.toLocaleDateString('en-us', {
 			month: '2-digit'
@@ -370,6 +400,14 @@ function saveOutput(today: Date, data, window: BrowserWindow) {
 			month: '2-digit'
 		})}${today.toLocaleDateString('en-us', { day: '2-digit' })}.xlsx`
 	);
-	window.webContents.send('laneToLane:update', { number: parseInt(flight), status: 'done' });
+
+	window.webContents.send('laneToLane:update', {
+		number: parseInt(flight),
+		status: 'done',
+		path: `${outputDirectory}/F${flight} ${dests[flight]} ${today.toLocaleDateString('en-us', {
+			month: '2-digit'
+		})}${today.toLocaleDateString('en-us', { day: '2-digit' })}.xlsx`
+	});
+
 	console.log(`Flight: ${flight} complete.`);
 }

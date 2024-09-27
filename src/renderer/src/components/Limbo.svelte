@@ -43,7 +43,7 @@
 </script>
 
 <div class="bg-slate-400 p-4 rounded-lg">
-	<h1 class="text-xl font-bold">LIMBO Report</h1>
+	<h1 class="text-xl font-bold">LIMBO</h1>
 	<div class="flex justify-between">
 		<button class="rounded px-2 bg-green-400" on:click={limbo}>Start</button>
 		{#if settings}
@@ -66,7 +66,7 @@
 			<input type="range" min="0" max="7" bind:value={latestIndex} class="w-full" />
 		</div>
 	{:else}
-		<div class="bg-slate-100 p-2 my-2">
+		<div class="bg-slate-100 p-2 my-2 rounded">
 			<div class="flex items-center gap-4">
 				<span class="font-bold">Status:</span>
 				<Icon icon={statusIcons['done']} class="text-green-600 text-xl" />

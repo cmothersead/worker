@@ -6,8 +6,6 @@
 		.map((number) => parseInt(number))
 		.filter((value) => !Number.isNaN(value));
 
-	$: console.log(trackingNumbers);
-
 	async function scorecard() {
 		await window.api.scorecard.run(trackingNumbers);
 	}

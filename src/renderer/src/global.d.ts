@@ -10,10 +10,14 @@ export declare global {
 				getExisting: (flightNumbers: number[]) => Promise<any>;
 				cons;
 				open: (path: string) => void;
+				loadConfig: () => Promise<{ flightNumbers: number[] }>;
 			};
 			limbo: {
 				run;
 				receiveUpdate;
+			};
+			monitor: {
+				shippers;
 			};
 			scorecard: {
 				run;

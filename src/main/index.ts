@@ -6,9 +6,14 @@ import icon from '../../resources/icon.png?asset';
 import { getCONSNumbers, getExistingLaneToLanes, laneToLanes } from './scripts/laneToLane';
 import { scorecard } from './scripts/browser';
 import { testStuff } from './scripts/monitor';
+import { readFileSync, writeFileSync } from 'fs';
 
 const username = '5260673';
 const password = 'OldPosition1';
+
+function readConfig() {
+	return JSON.parse(readFileSync('config.json').toString());
+}
 
 function createWindow(): void {
 	// Create the browser window.
@@ -58,6 +63,9 @@ function createWindow(): void {
 	ipcMain.handle('laneToLane:existing', (_, flightNumbers) =>
 		getExistingLaneToLanes(flightNumbers)
 	);
+	ipcMain.handle('laneToLane:getConfig', () => {
+		return readConfig().laneToLane;
+	});
 	ipcMain.on('limbo:run', async (_, { date, headless }) => await limbo(date, mainWindow, headless));
 	ipcMain.handle('scorecard:run', async (_, trackingNumbers) => await scorecard(trackingNumbers));
 	ipcMain.on('stop', () => {
@@ -67,6 +75,9 @@ function createWindow(): void {
 		signal = controller.signal;
 	});
 	ipcMain.on('test', () => testStuff());
+	ipcMain.handle('monitor:shippers', () => {
+		return readConfig().monitor;
+	});
 
 	// HMR for renderer base on electron-vite cli.
 	// Load the remote URL for development or the local html file for production.

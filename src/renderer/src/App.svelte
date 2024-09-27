@@ -1,8 +1,9 @@
 <script lang="ts">
 	import { LaneToLanes, Limbo, Scorecard } from './components';
+	import Monitor from './components/Monitor.svelte';
 	let headless = true;
 
-	window.electron.ipcRenderer.send('test');
+	// window.electron.ipcRenderer.send('test');
 </script>
 
 <div class="container mx-auto my-10">
@@ -12,6 +13,7 @@
 	<div class="flex gap-2">
 		<LaneToLanes {headless} />
 		<Limbo {headless} />
+		<Monitor {headless} />
 		<Scorecard {headless} />
 	</div>
 </div>

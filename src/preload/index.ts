@@ -10,12 +10,16 @@ const api = {
 		getExisting: (flightNumbers: number[]) =>
 			ipcRenderer.invoke('laneToLane:existing', flightNumbers),
 		cons: (args) => ipcRenderer.send('laneToLane:cons', args),
-		open: (path: string) => ipcRenderer.send('laneToLane:open', path)
+		open: (path: string) => ipcRenderer.send('laneToLane:open', path),
+		loadConfig: () => ipcRenderer.invoke('laneToLane:getConfig')
 	},
 	limbo: {
 		run: (args) => ipcRenderer.send('limbo:run', args),
 		receiveUpdate: (callback) =>
 			ipcRenderer.on('limbo:update', (_event, value) => callback(_event, value))
+	},
+	monitor: {
+		shippers: () => ipcRenderer.invoke('monitor:shippers')
 	},
 	scorecard: {
 		run: (trackingNumbers: number[]) => ipcRenderer.invoke('scorecard:run', trackingNumbers)

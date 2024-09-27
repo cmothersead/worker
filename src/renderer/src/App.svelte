@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { LaneToLanes, Limbo, Scorecard } from './components';
 	import Monitor from './components/Monitor.svelte';
-	let headless = true;
+	let headless = false;
 
 	// window.electron.ipcRenderer.send('test');
 </script>

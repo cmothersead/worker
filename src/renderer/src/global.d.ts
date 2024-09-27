@@ -17,6 +17,7 @@ export declare global {
 				receiveUpdate;
 			};
 			monitor: {
+				run;
 				shippers;
 			};
 			scorecard: {

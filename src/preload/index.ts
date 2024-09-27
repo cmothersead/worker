@@ -19,6 +19,8 @@ const api = {
 			ipcRenderer.on('limbo:update', (_event, value) => callback(_event, value))
 	},
 	monitor: {
+		run: (args: { data: { inPath: string; outPath: string }[]; headless: boolean }) =>
+			ipcRenderer.send('monitor:run', args),
 		shippers: () => ipcRenderer.invoke('monitor:shippers')
 	},
 	scorecard: {

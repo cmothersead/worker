@@ -490,13 +490,13 @@ export async function scorecard(trackingNumbers: number[]) {
 	);
 }
 
-export async function dreuiReport(config, trackingNumbers) {
+export async function dreuiReport(config, trackingNumbers: number[], headless: boolean = true) {
 	const trackingNumbersRemaining = [...trackingNumbers];
 	const sessions: any[] = [];
 
 	while (trackingNumbersRemaining.length > 0) {
 		const currentTrackingNumbers = trackingNumbersRemaining.splice(0, 18000);
-		sessions.push(dreuiSession(config, currentTrackingNumbers));
+		sessions.push(dreuiSession(config, currentTrackingNumbers, headless));
 	}
 
 	const results = await Promise.all(sessions);
@@ -505,8 +505,8 @@ export async function dreuiReport(config, trackingNumbers) {
 	return [headers, ...results.flatMap((result) => result.slice(1))];
 }
 
-export async function dreuiSession(config, trackingNumbers) {
-	const browser = await chromium.launch({ headless: true });
+export async function dreuiSession(config, trackingNumbers: number[], headless: boolean = true) {
+	const browser = await chromium.launch({ headless });
 	const page = await browser.newPage();
 	await page.goto(
 		'https://emars-tssrealtime-las.g.fedex.com:8001/spotfire/wp/analysis?file=/DRE/DREReport/AnalysisFiles/DREReport&waid=IwquIJCnk0yWrdYUHb8A6-17132565edpaLr&wavid=0'

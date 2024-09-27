@@ -5,7 +5,7 @@ import { limbo } from './scripts';
 import icon from '../../resources/icon.png?asset';
 import { getCONSNumbers, getExistingLaneToLanes, laneToLanes } from './scripts/laneToLane';
 import { scorecard } from './scripts/browser';
-import { testStuff } from './scripts/monitor';
+import { monitorShipper } from './scripts/monitor';
 import { readFileSync, writeFileSync } from 'fs';
 
 const username = '5260673';
@@ -74,10 +74,12 @@ function createWindow(): void {
 		controller = new AbortController();
 		signal = controller.signal;
 	});
-	ipcMain.on('test', () => testStuff());
 	ipcMain.handle('monitor:shippers', () => {
 		return readConfig().monitor;
 	});
+	ipcMain.on('monitor:run', async (_, { data, headless }) =>
+		data.map(({ inPath, outPath }) => monitorShipper(inPath, outPath, headless))
+	);
 
 	// HMR for renderer base on electron-vite cli.
 	// Load the remote URL for development or the local html file for production.

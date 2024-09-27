@@ -3,36 +3,8 @@ import { getToday } from '.';
 import { dreuiReport } from './browser';
 import { monitorConfig } from './dreuiConfigs';
 
-export async function testStuff() {
-	const monitorFiles = [
-		{
-			inPath:
-				'C:/Users/5260673/OneDrive - MyFedEx/SAA/Breakdown by Senior/Night Sort/OB1 Nights - Chatterton.xlsx',
-			outPath:
-				'C:/Users/5260673/OneDrive - MyFedEx/Communication/OB1 Files/OB1 Nights - Chatterton - Shared.xlsx'
-		}
-		// {
-		// 	inPath:
-		// 		'C:/Users/5260673/OneDrive - MyFedEx/SAA/Breakdown by Senior/Night Sort/OB1 Nights - Henderson.xlsx',
-		// 	outPath:
-		// 		'C:/Users/5260673/OneDrive - MyFedEx/Communication/OB1 Files/OB1 Nights - Henderson - Shared.xlsx'
-		// }
-		// {
-		// 	inPath:
-		// 		'C:/Users/5260673/OneDrive - MyFedEx/SAA/Breakdown by Senior/Night Sort/OB4 Nights - Lawrence.xlsx',
-		// 	outPath:
-		// 		'C:/Users/5260673/OneDrive - MyFedEx/Communication/OB4 Files/OB4 Nights - Lawrence - Shared.xlsx'
-		// }
-		// {
-		// 	inPath: 'C:/Users/5260673/OneDrive - MyFedEx/SAA/Critical Shippers/Ozark.xlsx',
-		// 	outPath: 'C:/Users/5260673/OneDrive - MyFedEx/Communication/Recaps/Ozark - Shared.xlsx'
-		// }
-	];
-
-	await Promise.all(monitorFiles.map(({ inPath, outPath }) => testStuff2(inPath, outPath)));
-}
-
-export async function testStuff2(inPath: string, outPath: string) {
+export async function monitorShipper(inPath: string, outPath: string, headless: boolean) {
+	console.log('Shipper started');
 	const today = getToday();
 	const todayString = `${today.toLocaleDateString('en-us', { month: '2-digit' })}${today.toLocaleDateString('en-us', { day: '2-digit' })}`;
 	const oldWorkbook = new Excel.Workbook();
@@ -53,7 +25,10 @@ export async function testStuff2(inPath: string, outPath: string) {
 			visibility: 'visible'
 		}
 	];
-	oldWorkbook.getWorksheet(todayString)?.eachRow((row) => todaySheet.addRow(row.values));
+	const oldTodaySheet = oldWorkbook.getWorksheet(todayString);
+	if (oldTodaySheet == undefined)
+		throw new Error(`Sheet: ${todayString} not found in file: ${inPath}`);
+	oldTodaySheet.eachRow((row) => todaySheet.addRow(row.values));
 	const trackingNumberColumn = todaySheet.getColumn(1);
 	trackingNumberColumn.numFmt = '0';
 	trackingNumberColumn.width = 13;
@@ -82,7 +57,7 @@ export async function testStuff2(inPath: string, outPath: string) {
 	};
 
 	const trackingNumbers = trackingNumberColumn.values.slice(2);
-	const results = await dreuiReport(monitorConfig, trackingNumbers);
+	const results = await dreuiReport(monitorConfig, trackingNumbers, headless);
 	console.log('dreui done');
 	todaySheet.eachRow((row, index) => {
 		if (index == 1) return;

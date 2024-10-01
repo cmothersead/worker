@@ -488,6 +488,7 @@ export async function scorecard(trackingNumbers: number[]) {
 		'C:/Users/5260673/Downloads/out.csv',
 		outputData.map((line) => line.map((item) => `"${item}"`).join(',')).join('\n')
 	);
+	console.log('Done');
 }
 
 export async function dreuiReport(config, trackingNumbers: number[], headless: boolean = true) {

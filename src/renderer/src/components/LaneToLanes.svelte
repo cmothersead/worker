@@ -6,7 +6,7 @@
 		number: number;
 		dest: string;
 		city: string;
-		cons: string;
+		cons: number;
 		path: string;
 		status: 'done' | 'loading' | 'error' | 'none';
 	};
@@ -26,21 +26,20 @@
 	let settings = false;
 
 	async function laneToLanes() {
-		l2lRunning = true;
-		laneToLaneOutput = laneToLaneOutput.map((flight) => ({ ...flight, status: 'loading' }));
-		await window.api.laneToLane.run({
-			flightNumbers,
-			headless
-		});
-		l2lRunning = false;
+		laneToLaneOutput
+			.filter(({ status }) => status != 'loading' && status != 'done')
+			.map(({ number }) => laneToLane(number));
 	}
 
-	async function lanteToLane(flightNumber: number) {
+	async function laneToLane(flightNumber: number) {
 		laneToLaneOutput = laneToLaneOutput.map((flight) => ({
 			...flight,
 			status: flight.number === flightNumber ? 'loading' : flight.status
 		}));
-		await window.api.laneToLane.run({ flightNumbers: [flightNumber], headless });
+		await window.api.laneToLane.run({
+			consNumber: laneToLaneOutput.find(({ number }) => number === flightNumber).cons,
+			headless
+		});
 	}
 
 	async function configure() {
@@ -50,11 +49,12 @@
 			number: flightNumber,
 			dest: dests[flightNumber],
 			city: cities[dests[flightNumber]],
-			cons: '',
+			cons: undefined,
 			path: '',
 			status: 'none'
 		}));
-		await Promise.all([getExisting(), getCONS()]);
+		await getCONS();
+		await getExisting();
 	}
 	async function getExisting() {
 		const existing = await window.api.laneToLane.getExisting(flightNumbers);
@@ -64,7 +64,12 @@
 		}));
 	}
 	async function getCONS() {
-		window.api.laneToLane.cons({ flightNumbers, headless });
+		laneToLaneOutput = await Promise.all(
+			laneToLaneOutput.map(async (flight) => ({
+				...flight,
+				cons: await window.api.laneToLane.cons({ flightNumber: flight.number, headless })
+			}))
+		);
 	}
 
 	// function stop() {
@@ -88,6 +93,10 @@
 	}
 
 	configure();
+
+	$: window.api.laneToLane.writeCONS(
+		laneToLaneOutput?.map(({ number, cons }) => ({ number, cons }))
+	);
 </script>
 
 <div class="flex flex-col bg-slate-400 p-4 rounded-lg">
@@ -121,28 +130,28 @@
 							</div>
 							<div class="text-sm flex items-center gap-1">
 								<span class="font-bold italic">CONS:</span>
-								{#if flight.cons == ''}<Icon icon={statusIcons['loading']} />
-								{:else}<span>{flight.cons}</span>
+								{#if flight.cons == undefined}<Icon icon={statusIcons['loading']} />
+								{:else}<span>{flight.cons ?? ''}</span>
 								{/if}
 							</div>
 						</div>
 						<div class="flex flex-col items-center justify-between gap-1">
-							<div>
+							<div class:group={flight.status != 'loading'}>
 								<span class:hidden={flight.status != 'loading'}>
-									<Icon icon={statusIcons['loading']} class="text-3xl" />
+									<Icon icon={statusIcons['loading']} class="text-xl" />
 								</span>
-								<span class:hidden={flight.status != 'error'}>
+								<span class="group-hover:hidden" class:hidden={flight.status != 'error'}>
 									<Icon icon={statusIcons['error']} class="text-xl text-red-600" />
 								</span>
-								<span class:hidden={flight.status != 'done'}>
+								<span class="group-hover:hidden" class:hidden={flight.status != 'done'}>
 									<Icon icon={statusIcons['done']} class="text-xl text-green-600" />
 								</span>
 								<button
 									class:hidden={flight.status != 'none' || flight.cons == undefined}
-									class="cursor-pointer"
-									on:click={() => lanteToLane(flight.number)}
+									class="group-hover:block cursor-pointer"
+									on:click={() => laneToLane(flight.number)}
 								>
-									<Icon icon={statusIcons['refresh']} class="text-2xl text-gray-600" />
+									<Icon icon={statusIcons['refresh']} class="text-xl text-gray-600" />
 								</button>
 							</div>
 							{#if flight.path}

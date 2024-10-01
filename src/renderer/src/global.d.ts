@@ -5,12 +5,13 @@ export declare global {
 		electron: ElectronAPI;
 		api: {
 			laneToLane: {
-				run;
+				run: (args: { consNumber: number; headless: boolean }) => Promise<any>;
 				receiveUpdate;
 				getExisting: (flightNumbers: number[]) => Promise<any>;
-				cons;
+				cons: (args: { flightNumber: number; headless: boolean }) => Promise<number>;
 				open: (path: string) => void;
 				loadConfig: () => Promise<{ flightNumbers: number[] }>;
+				writeCONS: (flightCONS: { number: number; cons: string }) => void;
 			};
 			limbo: {
 				run;

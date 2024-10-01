@@ -4,14 +4,17 @@ import { electronAPI } from '@electron-toolkit/preload';
 // Custom APIs for renderer
 const api = {
 	laneToLane: {
-		run: (args) => ipcRenderer.send('laneToLane', args),
+		run: (args: { consNumber: number; headless: boolean }) =>
+			ipcRenderer.send('laneToLane:run', args),
 		receiveUpdate: (callback) =>
 			ipcRenderer.on('laneToLane:update', (_event, value) => callback(_event, value)),
 		getExisting: (flightNumbers: number[]) =>
 			ipcRenderer.invoke('laneToLane:existing', flightNumbers),
-		cons: (args) => ipcRenderer.send('laneToLane:cons', args),
+		cons: (args: { flightNumber: number; headless: boolean }) =>
+			ipcRenderer.invoke('laneToLane:cons', args),
 		open: (path: string) => ipcRenderer.send('laneToLane:open', path),
-		loadConfig: () => ipcRenderer.invoke('laneToLane:getConfig')
+		loadConfig: () => ipcRenderer.invoke('laneToLane:getConfig'),
+		writeCONS: (consNumbers: number[]) => ipcRenderer.send('laneToLane:writeCONS', consNumbers)
 	},
 	limbo: {
 		run: (args) => ipcRenderer.send('limbo:run', args),

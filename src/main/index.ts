@@ -1,9 +1,9 @@
 import { app, shell, BrowserWindow, ipcMain } from 'electron';
 import { join } from 'path';
 import { electronApp, optimizer, is } from '@electron-toolkit/utils';
-import { limbo } from './scripts';
+import { getToday, limbo } from './scripts';
 import icon from '../../resources/icon.png?asset';
-import { getCONSNumbers, getExistingLaneToLanes, laneToLanes } from './scripts/laneToLane';
+import { getCONSNumber, getExistingLaneToLanes, laneToLane } from './scripts/laneToLane';
 import { scorecard } from './scripts/browser';
 import { monitorShipper } from './scripts/monitor';
 import { readFileSync, writeFileSync } from 'fs';
@@ -13,6 +13,14 @@ const password = 'OldPosition1';
 
 function readConfig() {
 	return JSON.parse(readFileSync('config.json').toString());
+}
+
+function readCache() {
+	return JSON.parse(readFileSync('cache.json').toString());
+}
+
+function writeCache(data: string) {
+	writeFileSync('cache.json', data);
 }
 
 function createWindow(): void {
@@ -43,10 +51,10 @@ function createWindow(): void {
 
 	// IPC
 	ipcMain.on(
-		'laneToLane',
-		async (_, { flightNumbers, headless }) =>
-			await laneToLanes({
-				data: { flightNumbers },
+		'laneToLane:run',
+		async (_, { consNumber, headless }) =>
+			await laneToLane({
+				consNumber,
 				headless,
 				signal,
 				window: mainWindow,
@@ -54,11 +62,13 @@ function createWindow(): void {
 				password
 			})
 	);
-	ipcMain.on(
-		'laneToLane:cons',
-		async (_, { flightNumbers, headless }) =>
-			await getCONSNumbers({ flightNumbers, headless, window: mainWindow, username, password })
-	);
+	ipcMain.handle('laneToLane:cons', async (_, { flightNumber, headless }) => {
+		const todayString = getToday().toDateString();
+		const cachedCONS = readCache()[todayString][flightNumber];
+		if (cachedCONS != undefined) return cachedCONS;
+
+		return await getCONSNumber({ flightNumber, headless, window: mainWindow, username, password });
+	});
 	ipcMain.on('laneToLane:open', (_, path) => shell.openPath(path));
 	ipcMain.handle('laneToLane:existing', (_, flightNumbers) =>
 		getExistingLaneToLanes(flightNumbers)
@@ -80,6 +90,23 @@ function createWindow(): void {
 	ipcMain.on('monitor:run', async (_, { data, headless }) =>
 		data.map(({ inPath, outPath }) => monitorShipper(inPath, outPath, headless))
 	);
+	ipcMain.on('laneToLane:writeCONS', (_, flightCONS) => {
+		const cache = readCache();
+		const today = getToday().toDateString();
+		writeCache(
+			JSON.stringify({
+				...cache,
+				[today]: {
+					...cache[today],
+					...Object.fromEntries(
+						flightCONS
+							?.filter(({ cons }) => cons != undefined)
+							.map(({ number, cons }) => [number, cons])
+					)
+				}
+			})
+		);
+	});
 
 	// HMR for renderer base on electron-vite cli.
 	// Load the remote URL for development or the local html file for production.

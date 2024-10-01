@@ -64,60 +64,42 @@ const dests = {
 	1682: 'BNA'
 };
 
-export async function laneToLanes({
-	data,
+export async function laneToLane({
+	consNumber,
 	headless,
 	username,
 	password,
 	signal,
 	window
 }: {
-	data: { flightNumbers?: number[]; consNumbers?: string[] };
+	consNumber: number | string;
 	headless: boolean;
 	username: string;
 	password: string;
 	signal: AbortSignal;
 	window: BrowserWindow;
 }) {
-	let { flightNumbers, consNumbers } = data;
-
 	const today = getToday();
 	const yesterday = getYesterday();
 
 	if (signal.aborted) return;
 	deleteOldLaneToLanes(yesterday, outputDirectory, window);
 
+	if (consNumber == undefined) return;
 	if (signal.aborted) return;
-	if (flightNumbers) {
-		consNumbers = await lookupConsFromFlight({
-			flightNumbers,
-			username,
-			password,
-			today,
-			headless,
-			window
-		});
-	}
+	const downloadPath = await downloadReportData({
+		consNumber,
+		signal,
+		username,
+		password,
+		headless
+	});
 
-	if (consNumbers == undefined) return;
-	await Promise.all(
-		consNumbers.map(async (consNumber) => {
-			if (signal.aborted) return;
-			const downloadPath = await downloadReportData({
-				consNumber,
-				signal,
-				username,
-				password,
-				headless
-			});
-
-			if (signal.aborted) return;
-			await saveOutput(today, downloadPath, window);
-		})
-	);
+	if (signal.aborted) return;
+	await saveOutput(today, downloadPath, window);
 }
 
-export function getExistingLaneToLanes(flightNumbers: number[]) {
+export async function getExistingLaneToLanes(flightNumbers: number[]) {
 	const today = getToday();
 	return flightNumbers
 		.map((flight) => ({
@@ -130,21 +112,21 @@ export function getExistingLaneToLanes(flightNumbers: number[]) {
 		.filter(({ path }) => existsSync(path));
 }
 
-export async function getCONSNumbers({
-	flightNumbers,
+export async function getCONSNumber({
+	flightNumber,
 	headless,
 	username,
 	password,
 	window
 }: {
-	flightNumbers: number[];
+	flightNumber: number;
 	headless: boolean;
 	username: string;
 	password: string;
 	window: BrowserWindow;
 }) {
-	await lookupConsFromFlight({
-		flightNumbers,
+	return await lookupConsFromFlight({
+		flightNumber,
 		headless,
 		username,
 		password,
@@ -178,14 +160,13 @@ async function signIn(page: Page, username: string, password: string) {
 }
 
 async function lookupConsFromFlight({
-	flightNumbers,
+	flightNumber,
 	username,
 	password,
 	today,
-	headless,
-	window
+	headless
 }: {
-	flightNumbers: (string | number)[];
+	flightNumber: string | number;
 	username: string;
 	password: string;
 	today: Date;
@@ -219,24 +200,13 @@ async function lookupConsFromFlight({
 	const flightNumberValues = await flightNumberColumn.evaluateAll((elements) =>
 		elements.map((element) => element.innerText)
 	);
-	const indexes = flightNumbers.map((flightNumber) =>
-		flightNumberValues.findIndex((value) => value == flightNumber)
-	);
+	const index = flightNumberValues.findIndex((value) => value == flightNumber);
 	const consNumberValues = await consNumberColumn.evaluateAll((elements) =>
 		elements.map((element) => element.innerText)
 	);
-	const fails = indexes
-		.map((value, index) => ({ value, flightNumber: flightNumbers[index] }))
-		.filter(({ value }) => value == -1)
-		.map(({ flightNumber }) => ({ number: flightNumber, status: 'error' }));
-	window.webContents.send('laneToLane:update', fails);
-	const cons = indexes.map((value, index) => ({
-		number: flightNumbers[index],
-		cons: consNumberValues[value]
-	}));
-	window.webContents.send('laneToLane:update', cons);
+
 	await page.close();
-	return indexes.map((index) => consNumberValues[index]).filter((consNumber) => !!consNumber);
+	return consNumberValues[index];
 }
 
 async function downloadReportData({
@@ -246,7 +216,7 @@ async function downloadReportData({
 	password,
 	headless
 }: {
-	consNumber: string;
+	consNumber: number | string;
 	signal: AbortSignal;
 	username: string;
 	password: string;

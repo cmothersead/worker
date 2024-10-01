@@ -24,7 +24,7 @@
 						...outbounds.filter(({ active }) => active)
 					],
 					headless
-				})}>Test</button
+				})}>Run</button
 		>
 		<div>
 			Shippers

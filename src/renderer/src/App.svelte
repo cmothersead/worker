@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { LaneToLanes, Limbo, Scorecard } from './components';
 	import Monitor from './components/Monitor.svelte';
+	import Shippers from './components/Shippers.svelte';
 	let headless = false;
 
 	// window.electron.ipcRenderer.send('test');
@@ -16,5 +17,6 @@
 		<Limbo {headless} />
 		<Monitor {headless} />
 		<Scorecard {headless} />
+		<Shippers />
 	</div>
 </div>

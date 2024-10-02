@@ -452,7 +452,7 @@ function createSheetData(dataArray) {
 	return sheetData;
 }
 
-async function waitForLoad(page) {
+export async function waitForLoad(page) {
 	const loader = page.locator('svg[class="sf-svg-loader-12x12"]');
 
 	await loader.waitFor({ state: 'visible' });

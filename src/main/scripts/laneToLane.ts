@@ -1,6 +1,6 @@
 import { copyFileSync, existsSync, mkdirSync, readdirSync, readFileSync, unlinkSync } from 'fs';
 import AdmZip from 'adm-zip';
-import Excel from 'exceljs';
+// import Excel from 'exceljs';
 import { chromium, Page } from 'playwright';
 import { BrowserWindow } from 'electron';
 import { getToday, getYesterday } from '.';
@@ -194,19 +194,24 @@ async function lookupConsFromFlight({
 	await destinationTextbox.fill('INDH');
 	await startDateSelect.selectOption(todayString);
 	await endDateSelect.selectOption(todayString);
-	await searchButton.click();
 
-	await flightNumberColumn.first().waitFor();
-	const flightNumberValues = await flightNumberColumn.evaluateAll((elements) =>
-		elements.map((element) => element.innerText)
-	);
-	const index = flightNumberValues.findIndex((value) => value == flightNumber);
-	const consNumberValues = await consNumberColumn.evaluateAll((elements) =>
-		elements.map((element) => element.innerText)
-	);
+	let consNumber = undefined;
+	while (consNumber == undefined) {
+		await searchButton.click();
+
+		await flightNumberColumn.first().waitFor();
+		const flightNumberValues = await flightNumberColumn.evaluateAll((elements) =>
+			elements.map((element) => element.innerText)
+		);
+		const index = flightNumberValues.findIndex((value) => value == flightNumber);
+		const consNumberValues = await consNumberColumn.evaluateAll((elements) =>
+			elements.map((element) => element.innerText)
+		);
+		consNumber = consNumberValues[index];
+	}
 
 	await page.close();
-	return consNumberValues[index];
+	return consNumber;
 }
 
 async function downloadReportData({

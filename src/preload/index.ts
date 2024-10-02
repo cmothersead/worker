@@ -19,7 +19,8 @@ const api = {
 	limbo: {
 		run: (args) => ipcRenderer.send('limbo:run', args),
 		receiveUpdate: (callback) =>
-			ipcRenderer.on('limbo:update', (_event, value) => callback(_event, value))
+			ipcRenderer.on('limbo:update', (_event, value) => callback(_event, value)),
+		getExisting: () => ipcRenderer.invoke('limbo:existing')
 	},
 	monitor: {
 		run: (args: { data: { inPath: string; outPath: string }[]; headless: boolean }) =>
@@ -28,6 +29,9 @@ const api = {
 	},
 	scorecard: {
 		run: (trackingNumbers: number[]) => ipcRenderer.invoke('scorecard:run', trackingNumbers)
+	},
+	shippers: {
+		run: () => ipcRenderer.send('testshippers')
 	}
 };
 

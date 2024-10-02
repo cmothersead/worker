@@ -1,12 +1,3 @@
-import { chromium } from 'playwright';
-import { dreuiReport, limboProcess, scorecard } from './browser.js';
-import { BrowserWindow } from 'electron';
-// import { readFileSync } from 'fs'
-
-// const flightNumbers = [1609];
-
-// const data = readFileSync("data.txt").toString().split("\r\n");
-
 export function getToday() {
 	//Get current date. If after midnight, use previous day
 	const today = new Date(Date.now());
@@ -19,9 +10,4 @@ export function getYesterday() {
 	const yesterday = new Date(today);
 	yesterday.setDate(yesterday.getDate() - 1);
 	return yesterday;
-}
-
-export async function limbo(date: Date, window: BrowserWindow, headless = true) {
-	const browser = await chromium.launch({ headless });
-	await limboProcess(browser, date, window);
 }

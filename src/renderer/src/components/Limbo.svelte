@@ -3,6 +3,7 @@
 
 	export let headless = true;
 	let limboRunning = false;
+	let status: 'none' | 'loading' | 'done' | 'error' = 'none';
 	let settings = false;
 	let latestIndex = 0;
 	let output: {
@@ -28,11 +29,14 @@
 	};
 
 	async function limbo() {
+		status = 'loading';
 		limboRunning = true;
 		const today = new Date(Date.now());
 		if (today.getHours() < 11) today.setDate(today.getDate() - 1);
 		await window.api.limbo.run({ date: today, headless });
 	}
+
+	async function configure() {}
 
 	window.api.limbo.receiveUpdate((_, value) => {
 		output = {
@@ -40,6 +44,8 @@
 			...value
 		};
 	});
+
+	configure();
 </script>
 
 <div class="bg-slate-400 p-4 rounded-lg">
@@ -69,7 +75,11 @@
 		<div class="bg-slate-100 p-2 my-2 rounded">
 			<div class="flex items-center gap-4">
 				<span class="font-bold">Status:</span>
-				<Icon icon={statusIcons['done']} class="text-green-600 text-xl" />
+				<div>
+					<span class:text-green-600={status == 'done'} class:text-red-600={status == 'error'}>
+						<Icon icon={statusIcons[status]} class="text-xl" />
+					</span>
+				</div>
 			</div>
 
 			<div>

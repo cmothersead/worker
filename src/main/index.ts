@@ -1,12 +1,14 @@
 import { app, shell, BrowserWindow, ipcMain } from 'electron';
 import { join } from 'path';
 import { electronApp, optimizer, is } from '@electron-toolkit/utils';
-import { getToday, limbo } from './scripts';
+import { getToday } from './scripts';
 import icon from '../../resources/icon.png?asset';
 import { getCONSNumber, getExistingLaneToLanes, laneToLane } from './scripts/laneToLane';
 import { scorecard } from './scripts/browser';
 import { monitorShipper } from './scripts/monitor';
 import { readFileSync, writeFileSync } from 'fs';
+import { limbo } from './scripts/limbo';
+import { shippers } from './scripts/shippers';
 
 const username = '5260673';
 const password = 'OldPosition1';
@@ -76,7 +78,8 @@ function createWindow(): void {
 	ipcMain.handle('laneToLane:getConfig', () => {
 		return readConfig().laneToLane;
 	});
-	ipcMain.on('limbo:run', async (_, { date, headless }) => await limbo(date, mainWindow, headless));
+	ipcMain.on('limbo:run', async (_, { date, headless }) => await limbo({ date, headless }));
+	// ipcMain.handle('limbo:existing', () => );
 	ipcMain.handle('scorecard:run', async (_, trackingNumbers) => await scorecard(trackingNumbers));
 	ipcMain.on('stop', () => {
 		console.log('aborting');
@@ -95,7 +98,6 @@ function createWindow(): void {
 		const today = getToday().toDateString();
 		writeCache(
 			JSON.stringify({
-				...cache,
 				[today]: {
 					...cache[today],
 					...Object.fromEntries(
@@ -107,6 +109,7 @@ function createWindow(): void {
 			})
 		);
 	});
+	ipcMain.on('testshippers', shippers);
 
 	// HMR for renderer base on electron-vite cli.
 	// Load the remote URL for development or the local html file for production.

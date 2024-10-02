@@ -24,6 +24,9 @@ export declare global {
 			scorecard: {
 				run;
 			};
+			shippers: {
+				run;
+			};
 		};
 	}
 }

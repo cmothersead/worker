@@ -34,6 +34,7 @@
     "@electron-toolkit/tsconfig": "^1.0.1",
     "@iconify/svelte": "^4.0.2",
     "@sveltejs/vite-plugin-svelte": "^3.1.1",
+    "@types/lodash": "^4.17.9",
     "@types/node": "^20.14.8",
     "autoprefixer": "^10.4.20",
     "electron": "^31.0.2",

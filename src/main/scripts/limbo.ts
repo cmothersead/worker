@@ -4,6 +4,7 @@ import _ from 'lodash';
 import Excel from 'exceljs';
 import { dreuiReport } from './browser';
 import { limboConfig } from './dreuiConfigs';
+import { getToday } from '.';
 
 const blankTemplate = 'C:/Users/5260673/ONeDrive - MyFedEx/Documents/blank.xlsx';
 
@@ -280,4 +281,30 @@ export async function limbo({ date, headless }: { date: Date; headless: boolean 
 		topOrigin: { code: topOrigin, quantity: topOriginCount },
 		topDestination: { code: topDest, quantity: topDestCount }
 	};
+}
+
+export async function getExistingLIMBO() {
+	const today = getToday();
+	const shareFilePath = `C:/Users/5260673/OneDrive - MyFedEx/Communication/Reports/LIMBO/LIMBO - ${today.toLocaleDateString(
+		'en-us',
+		{
+			month: '2-digit'
+		}
+	)}${today.toLocaleDateString('en-us', {
+		day: '2-digit'
+	})}.xlsx`;
+
+	const workbook = new Excel.Workbook();
+	await workbook.xlsx.readFile(shareFilePath);
+	const originSheet = workbook.getWorksheet('Origin');
+	const topOrigin = {
+		code: originSheet?.getRow(3).values?.at(1),
+		quantity: originSheet?.getRow(3).values?.at(-1)
+	};
+	const destinationSheet = workbook.getWorksheet('Destination');
+	const topDestination = {
+		code: destinationSheet?.getRow(3).values?.at(1),
+		quantity: destinationSheet?.getRow(3).values?.at(-1)
+	};
+	return { topOrigin, topDestination };
 }

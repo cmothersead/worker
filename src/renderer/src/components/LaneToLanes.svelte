@@ -1,6 +1,7 @@
 <script lang="ts">
 	import Icon from '@iconify/svelte';
 	import { dests, cities } from '../data';
+	import { statusIcons } from '.';
 
 	type flightInfo = {
 		number: number;
@@ -9,13 +10,6 @@
 		cons: number;
 		path: string;
 		status: 'done' | 'loading' | 'error' | 'none';
-	};
-
-	const statusIcons = {
-		loading: 'eos-icons:three-dots-loading',
-		error: 'material-symbols:error',
-		done: 'icon-park-solid:check-one',
-		refresh: 'iconoir:refresh-circle-solid'
 	};
 
 	let flightNumbers = [];

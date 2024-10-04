@@ -53,7 +53,7 @@ export async function shipper({
 	);
 
 	dateSheet.spliceRows(1, dateSheet.actualRowCount, ...formattedData);
-	workbook.xlsx.writeFile(outputPath);
+	// workbook.xlsx.writeFile(outputPath);
 	console.log(`${name} done`);
 	return formattedData.length - 1;
 }

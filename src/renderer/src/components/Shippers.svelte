@@ -1,4 +1,7 @@
 <script lang="ts">
+	import Icon from '@iconify/svelte';
+	import { statusIcons } from '.';
+
 	export let headless = true;
 	const criticalShippers = [
 		{
@@ -93,16 +96,25 @@
 		}
 	];
 
-	let output = criticalShippers.map((shipper) => ({ ...shipper, count: undefined }));
+	let output = criticalShippers.map((shipper) => ({
+		...shipper,
+		count: undefined,
+		status: 'none'
+	}));
 	let status = 'not started';
 
-	async function scorecard() {
+	async function shippers() {
 		status = 'running';
 		const simultaneousCount = 5;
-		const shipperPromise = async ({ name, accountNumbers }, index) => {
+		const shipperPromise = async ({ name, accountNumbers }, index: number) => {
+			output = output.map((shipper) =>
+				shipper.name === name ? { ...shipper, status: 'loading' } : shipper
+			);
 			const count = await window.api.shippers.run({ name, accountNumbers, headless });
 			console.log(count);
-			output = output.map((shipper) => (shipper.name === name ? { ...shipper, count } : shipper));
+			output = output.map((shipper) =>
+				shipper.name === name ? { ...shipper, count, status: 'done' } : shipper
+			);
 			return index;
 		};
 
@@ -118,13 +130,21 @@
 		}
 		status = 'done';
 	}
+
+	$: totalQuantity = output.reduce(
+		(prev, { count }) => (count == undefined ? prev : prev + count),
+		0
+	);
 </script>
 
 <div class="bg-slate-400 p-4 rounded-lg">
 	<h1 class="text-xl font-bold">Shippers</h1>
 	<div class="flex flex-col gap-1">
-		<button class="bg-green-500" on:click={scorecard}>Let's Go!</button>
-		<span>{status}</span>
+		<button class="bg-green-500" on:click={shippers}>Let's Go!</button>
+		<div class="flex justify-between">
+			<span>{status}</span>
+			<span>{totalQuantity}</span>
+		</div>
 		<div class="flex flex-col gap-1">
 			{#each output as shipper}
 				<div class="bg-slate-100 py-1 px-4 rounded">
@@ -132,7 +152,10 @@
 						<div class="text-xs font-bold">
 							{shipper.name}
 						</div>
-						<div class="text-xs">{shipper.count ?? '-'}</div>
+						<div class="flex">
+							<div class="text-xs">{shipper.count ?? '-'}</div>
+							<div><Icon icon={statusIcons[shipper.status]} /></div>
+						</div>
 					</div>
 				</div>
 			{/each}

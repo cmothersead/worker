@@ -12,7 +12,7 @@
 	<div class="text-center text-lg text-white">Let's do some work!</div>
 
 	<input type="checkbox" bind:checked={headless} />
-	<div class="flex gap-2">
+	<div class="flex justify-center gap-2">
 		<LaneToLanes {headless} />
 		<Limbo {headless} />
 		<Monitor {headless} />

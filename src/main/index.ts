@@ -7,7 +7,7 @@ import { getCONSNumber, getExistingLaneToLanes, laneToLane } from './scripts/lan
 import { scorecard } from './scripts/browser';
 import { monitorShipper } from './scripts/monitor';
 import { readFileSync, writeFileSync } from 'fs';
-import { limbo } from './scripts/limbo';
+import { getExistingLIMBO, limbo } from './scripts/limbo';
 import { shipper, shippers } from './scripts/shippers';
 
 const username = '5260673';
@@ -28,7 +28,7 @@ function writeCache(data: string) {
 function createWindow(): void {
 	// Create the browser window.
 	const mainWindow = new BrowserWindow({
-		width: 1080,
+		width: 1160,
 		height: 830,
 		show: false,
 		autoHideMenuBar: true,
@@ -79,7 +79,7 @@ function createWindow(): void {
 		return readConfig().laneToLane;
 	});
 	ipcMain.handle('limbo:run', async (_, { date, headless }) => await limbo({ date, headless }));
-	// ipcMain.handle('limbo:existing', () => );
+	ipcMain.handle('limbo:existing', async () => await getExistingLIMBO());
 	ipcMain.handle(
 		'scorecard:run',
 		async (_, { trackingNumbers, headless }) => await scorecard({ trackingNumbers, headless })

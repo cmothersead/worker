@@ -1,5 +1,6 @@
 <script lang="ts">
 	import Icon from '@iconify/svelte';
+	import { statusIcons } from '.';
 
 	export let headless = true;
 	let limboRunning = false;
@@ -22,11 +23,6 @@
 		{ value: '02:00-02:59', display: '03:00' },
 		{ value: 'After 02:59', display: 'All' }
 	];
-	const statusIcons = {
-		loading: 'eos-icons:three-dots-loading',
-		error: 'material-symbols:error',
-		done: 'icon-park-solid:check-one'
-	};
 
 	async function limbo() {
 		status = 'loading';
@@ -38,7 +34,13 @@
 		status = 'done';
 	}
 
-	async function configure() {}
+	async function configure() {
+		const existing = await window.api.limbo.getExisting();
+		output = { ...output, ...existing };
+		if (output.topOrigin.code != undefined) {
+			status = 'done';
+		}
+	}
 
 	configure();
 </script>

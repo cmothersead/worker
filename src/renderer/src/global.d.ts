@@ -14,8 +14,15 @@ export declare global {
 				writeCONS: (flightCONS: { number: number; cons: string }) => void;
 			};
 			limbo: {
-				run;
+				run: (args: {
+					date: Date;
+					headless: boolean;
+				}) => Promise<{
+					topOrigin: { code: string; quantity: number };
+					topDestination: { code: string; quantity: number };
+				}>;
 				receiveUpdate;
+				getExisting: () => Promise<any>;
 			};
 			monitor: {
 				run;

@@ -55,6 +55,8 @@ export const dests = {
 };
 
 export const cities = {
+	IAH: 'Houston, TX',
+	DEN: 'Denver, CO',
 	DFW: 'Dallas, TX',
 	OAK: 'Oakland, CA',
 	ONT: 'Ontario, CA',

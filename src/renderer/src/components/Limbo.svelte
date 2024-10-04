@@ -33,17 +33,12 @@
 		limboRunning = true;
 		const today = new Date(Date.now());
 		if (today.getHours() < 11) today.setDate(today.getDate() - 1);
-		await window.api.limbo.run({ date: today, headless });
+		const outData = await window.api.limbo.run({ date: today, headless });
+		output = { ...output, ...outData };
+		status = 'done';
 	}
 
 	async function configure() {}
-
-	window.api.limbo.receiveUpdate((_, value) => {
-		output = {
-			...output,
-			...value
-		};
-	});
 
 	configure();
 </script>

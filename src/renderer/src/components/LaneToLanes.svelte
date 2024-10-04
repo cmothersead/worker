@@ -64,21 +64,13 @@
 		}));
 	}
 	async function getCONS() {
-		laneToLaneOutput = await Promise.all(
-			laneToLaneOutput.map(async (flight) => ({
-				...flight,
-				cons: await window.api.laneToLane.cons({ flightNumber: flight.number, headless })
-			}))
-		);
+		laneToLaneOutput.map(async (flight) => {
+			const cons = await window.api.laneToLane.cons({ flightNumber: flight.number, headless });
+			laneToLaneOutput = laneToLaneOutput.map((f) =>
+				f.number === flight.number ? { ...f, cons } : f
+			);
+		});
 	}
-
-	// function stop() {
-	// 	window.electron.ipcRenderer.send('stop');
-	// 	laneToLaneOutput = laneToLaneOutput.map((flight) => ({
-	// 		...flight,
-	// 		status: flight.status == 'loading' ? 'none' : flight.status
-	// 	}));
-	// }
 
 	window.api.laneToLane.receiveUpdate((_, values: flightInfo | flightInfo[]) => {
 		const info = [values].flat();
@@ -107,7 +99,7 @@
 			class:bg-slate-400={l2lRunning}
 			class:cursor-wait={l2lRunning}
 			on:click={laneToLanes}
-			disabled={l2lRunning}>Start</button
+			disabled={l2lRunning}>Start All</button
 		>
 		<button class="rounded px-2 bg-gray-600 text-white" on:click={() => (settings = !settings)}>
 			<Icon icon="mdi:gear" />

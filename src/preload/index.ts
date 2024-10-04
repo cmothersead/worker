@@ -17,7 +17,7 @@ const api = {
 		writeCONS: (consNumbers: number[]) => ipcRenderer.send('laneToLane:writeCONS', consNumbers)
 	},
 	limbo: {
-		run: (args) => ipcRenderer.send('limbo:run', args),
+		run: (args: { date: Date; headless: boolean }) => ipcRenderer.invoke('limbo:run', args),
 		receiveUpdate: (callback) =>
 			ipcRenderer.on('limbo:update', (_event, value) => callback(_event, value)),
 		getExisting: () => ipcRenderer.invoke('limbo:existing')
@@ -28,10 +28,12 @@ const api = {
 		shippers: () => ipcRenderer.invoke('monitor:shippers')
 	},
 	scorecard: {
-		run: (trackingNumbers: number[]) => ipcRenderer.invoke('scorecard:run', trackingNumbers)
+		run: (args: { trackingNumbers: number[]; headless: boolean }) =>
+			ipcRenderer.invoke('scorecard:run', args)
 	},
 	shippers: {
-		run: () => ipcRenderer.send('testshippers')
+		run: (args: { name: string; accountNumbers: string | string[]; headless: boolean }) =>
+			ipcRenderer.invoke('shippers:run', args)
 	}
 };
 

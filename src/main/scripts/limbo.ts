@@ -114,12 +114,9 @@ export async function limbo({ date, headless }: { date: Date; headless: boolean 
 			)
 			.value()
 	];
-	// console.log(originOutput);
-	console.log(`Top Origin: ${originOutput[2].at(0)?.value} - ${originOutput[2].at(-1)?.value}`);
-	// window.webContents.send('limbo:update', {
-	// 	topOrigin: { code: originOutput[2].at(0)?.value, quantity: originOutput[2].at(-1)?.value }
-	// });
-	const topOrigin = originOutput[2][0].value;
+	const topOrigin = originOutput[2].at(0);
+	const topOriginCount = originOutput[2].at(-1);
+	console.log(`Top Origin: ${topOrigin} - ${topOriginCount}`);
 
 	const groupedByDestination = {
 		..._(objects)
@@ -150,11 +147,9 @@ export async function limbo({ date, headless }: { date: Date; headless: boolean 
 			)
 			.value()
 	];
-	console.log(`Top Destination: ${destOutput[2].at(0)?.value} - ${destOutput[2].at(-1)?.value}`);
-	// window.webContents.send('limbo:update', {
-	// 	topDestination: { code: destOutput[2].at(0)?.value, quantity: destOutput[2].at(-1)?.value }
-	// });
-	const topDest = destOutput[2][0].value;
+	const topDest = destOutput[2].at(0);
+	const topDestCount = destOutput[2].at(-1);
+	console.log(`Top Destination: ${topDest} - ${topDestCount}`);
 
 	const blank = new Excel.Workbook();
 	await blank.xlsx.readFile(blankTemplate);
@@ -184,7 +179,76 @@ export async function limbo({ date, headless }: { date: Date; headless: boolean 
 		{ name: 'Origin', data: originOutput },
 		{ name: 'Destination', data: destOutput }
 	];
-	mapping.forEach(({ name, data }) => blank.addWorksheet(name).addRows(data));
+	mapping.forEach(({ name, data }) => {
+		const sheet = blank.addWorksheet(name);
+		sheet.addRows(data);
+		if (name === 'LIMBO' || name === 'Research') {
+			const columnA = sheet.getColumn('A');
+			columnA.width = 13;
+			columnA.numFmt = '0';
+		}
+		if (name === 'Origin' || name === 'Destination') {
+			sheet.eachRow((row) =>
+				row.eachCell(
+					(cell) =>
+						(cell.border = {
+							top: { style: 'thin' },
+							bottom: { style: 'thin' },
+							left: { style: 'thin' },
+							right: { style: 'thin' }
+						})
+				)
+			);
+			const row1 = sheet.getRow(1);
+			const row2 = sheet.getRow(2);
+			row1.eachCell((cell, colNumber) => {
+				cell.font = { bold: true };
+				cell.alignment = { wrapText: true };
+				cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFFFF00' } };
+				if (colNumber === 1) {
+					cell.border = {
+						top: { style: 'thick' },
+						left: { style: 'thick' },
+						right: { style: 'thin' }
+					};
+				} else if (colNumber === row1.cellCount) {
+					cell.border = {
+						top: { style: 'thick' },
+						left: { style: 'thin' },
+						right: { style: 'thick' }
+					};
+				} else {
+					cell.border = {
+						top: { style: 'thick' },
+						left: { style: 'thin' },
+						right: { style: 'thin' }
+					};
+				}
+			});
+			row2.eachCell((cell, colNumber) => {
+				cell.font = { bold: true };
+				if (colNumber === 1) {
+					cell.border = {
+						bottom: { style: 'thick' },
+						left: { style: 'thick' },
+						right: { style: 'thin' }
+					};
+				} else if (colNumber === row2.cellCount) {
+					cell.border = {
+						bottom: { style: 'thick' },
+						left: { style: 'thin' },
+						right: { style: 'thick' }
+					};
+				} else {
+					cell.border = {
+						bottom: { style: 'thick' },
+						left: { style: 'thin' },
+						right: { style: 'thin' }
+					};
+				}
+			});
+		}
+	});
 
 	const monthDirPath = `C:/Users/5260673/OneDrive - MyFedEx/SAA/LIMBO/LIMBO ${today.toLocaleDateString(
 		'en-us',
@@ -211,5 +275,9 @@ export async function limbo({ date, headless }: { date: Date; headless: boolean 
 		mkdirSync(monthDirPath);
 	}
 	blank.xlsx.writeFile(archiveFilePath);
-	// copyFileSync(archiveFilePath, shareFilePath);
+	copyFileSync(archiveFilePath, shareFilePath);
+	return {
+		topOrigin: { code: topOrigin, quantity: topOriginCount },
+		topDestination: { code: topDest, quantity: topDestCount }
+	};
 }

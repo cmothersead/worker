@@ -8,7 +8,7 @@ import { scorecard } from './scripts/browser';
 import { monitorShipper } from './scripts/monitor';
 import { readFileSync, writeFileSync } from 'fs';
 import { limbo } from './scripts/limbo';
-import { shippers } from './scripts/shippers';
+import { shipper, shippers } from './scripts/shippers';
 
 const username = '5260673';
 const password = 'OldPosition1';
@@ -78,9 +78,12 @@ function createWindow(): void {
 	ipcMain.handle('laneToLane:getConfig', () => {
 		return readConfig().laneToLane;
 	});
-	ipcMain.on('limbo:run', async (_, { date, headless }) => await limbo({ date, headless }));
+	ipcMain.handle('limbo:run', async (_, { date, headless }) => await limbo({ date, headless }));
 	// ipcMain.handle('limbo:existing', () => );
-	ipcMain.handle('scorecard:run', async (_, trackingNumbers) => await scorecard(trackingNumbers));
+	ipcMain.handle(
+		'scorecard:run',
+		async (_, { trackingNumbers, headless }) => await scorecard({ trackingNumbers, headless })
+	);
 	ipcMain.on('stop', () => {
 		console.log('aborting');
 		controller.abort();
@@ -109,7 +112,9 @@ function createWindow(): void {
 			})
 		);
 	});
-	ipcMain.on('testshippers', shippers);
+	ipcMain.handle('shippers:run', async (_, { name, accountNumbers, headless }) => {
+		return await shipper({ name, accountNumbers, headless });
+	});
 
 	// HMR for renderer base on electron-vite cli.
 	// Load the remote URL for development or the local html file for production.

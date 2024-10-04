@@ -2,7 +2,7 @@
 	import { LaneToLanes, Limbo, Scorecard } from './components';
 	import Monitor from './components/Monitor.svelte';
 	import Shippers from './components/Shippers.svelte';
-	let headless = false;
+	let headless = true;
 
 	// window.electron.ipcRenderer.send('test');
 </script>
@@ -17,6 +17,6 @@
 		<Limbo {headless} />
 		<Monitor {headless} />
 		<Scorecard {headless} />
-		<Shippers />
+		<Shippers {headless} />
 	</div>
 </div>

@@ -1,7 +1,7 @@
 import { chromium } from 'playwright';
 import { mkdirSync, existsSync, readFileSync, copyFileSync, writeFileSync } from 'fs';
 import AdmZip from 'adm-zip';
-import _ from 'lodash';
+import _, { head } from 'lodash';
 import { parse } from 'csv-parse/sync';
 import { commCommentAllConfig, limboConfig, scorecardConfig } from './dreuiConfigs.js';
 import { BrowserWindow } from 'electron';
@@ -459,9 +459,15 @@ export async function waitForLoad(page) {
 	await loader.waitFor({ state: 'hidden', timeout: 480000 });
 }
 
-export async function scorecard(trackingNumbers: number[]) {
+export async function scorecard({
+	trackingNumbers,
+	headless
+}: {
+	trackingNumbers: number[];
+	headless: boolean;
+}) {
 	const getData = async () => {
-		const data = await dreuiReport(scorecardConfig, trackingNumbers);
+		const data = await dreuiReport(scorecardConfig, trackingNumbers, headless);
 		console.log(data.length);
 		const dataNoDuplicates = data.filter(
 			(line, index) => data.findIndex((find) => find[0] == line[0]) == index
@@ -470,7 +476,7 @@ export async function scorecard(trackingNumbers: number[]) {
 		return dataNoDuplicates;
 	};
 	const getCommData = async () => {
-		const commData = await dreuiReport(commCommentAllConfig, trackingNumbers);
+		const commData = await dreuiReport(commCommentAllConfig, trackingNumbers, headless);
 		console.log(commData.length);
 		const commDataNoDuplicates = commData.filter(
 			(line, index) => commData.findIndex((find) => find[0] == line[0]) == index

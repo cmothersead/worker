@@ -7,7 +7,7 @@
 		.filter((value) => !Number.isNaN(value));
 
 	async function scorecard() {
-		await window.api.scorecard.run(trackingNumbers);
+		await window.api.scorecard.run({ trackingNumbers, headless });
 	}
 </script>
 

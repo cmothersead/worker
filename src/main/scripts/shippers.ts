@@ -36,6 +36,8 @@ export async function shipper({
 	);
 	formattedData[0][3] = 'Ramp';
 
+	if (formattedData[1] === undefined) return 0;
+
 	const workbook = new Excel.Workbook();
 	await workbook.xlsx.readFile(outputPath);
 
@@ -101,11 +103,14 @@ export async function getShipperData(accountNumbers: string | string[], headless
 	while (true) {
 		try {
 			console.log('looking for ship date');
-			const shipDateRow = await shipDateCell.getAttribute('row', { timeout: 1000 });
+			const shipDateRow = await shipDateCell.getAttribute('row', { timeout: 2000 });
 			const shipDateValue = shipDateSection.locator(
 				`.valueCellsContainer div[row="${shipDateRow}"]`
 			);
+			console.log(getToday());
+			console.log(shipDateRow);
 			await shipDateValue.click();
+			await new Promise((r) => setTimeout(r, 200000));
 			const ursaRow = await ursaCell.getAttribute('row');
 			const ursaSection = ursaHeader.locator(`+ div .valueCellsContainer div[row="${ursaRow}"]`);
 			await ursaSection.click();

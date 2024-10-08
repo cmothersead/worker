@@ -13,6 +13,14 @@ export async function monitorShipper(inPath: string, outPath: string, headless: 
 	await newWorkbook.xlsx.readFile(outPath);
 
 	const todaySheet = newWorkbook.getWorksheet(todayString) ?? newWorkbook.addWorksheet(todayString);
+	const sheetNames = newWorkbook.worksheets
+		.map(({ name }) => name)
+		.sort((a, b) => b.localeCompare(a))
+		.forEach((name, index) => {
+			const sheet = newWorkbook.getWorksheet(name);
+			if (sheet == undefined) return;
+			sheet.orderNo = index + 1;
+		});
 	todaySheet.orderNo = 0;
 	newWorkbook.views = [
 		{
@@ -68,6 +76,35 @@ export async function monitorShipper(inPath: string, outPath: string, headless: 
 		if (Number.isSafeInteger(parseInt(result[3]))) result[3] = parseInt(result[3]);
 		row.values = [...row.values.slice(1, 5), ...result, ...row.values.slice(13)];
 		if (result[4] == 'INDHU') {
+			row.eachCell({ includeEmpty: true }, (cell, index) => {
+				if (index < 10) cell.fill = fills.INDHU;
+			});
+		}
+	});
+
+	const sortedRows = todaySheet
+		.getRows(1, todaySheet.rowCount - 1)
+		?.map(({ values }) => values)
+		?.toSorted((a, b) =>
+			a[9] === 'CONS Loc Latest'
+				? -1
+				: b[9] === 'CONS Loc Latest'
+					? 1
+					: a[9] === undefined
+						? b[9] === undefined
+							? 0
+							: -1
+						: b[9] === undefined
+							? 1
+							: a[9].toString().localeCompare(b[9].toString())
+		);
+
+	if (sortedRows === undefined) return;
+
+	todaySheet.spliceRows(1, todaySheet.rowCount + 1, ...sortedRows);
+
+	todaySheet.eachRow((row) => {
+		if (row.getCell(9).value === 'INDHU') {
 			row.eachCell({ includeEmpty: true }, (cell, index) => {
 				if (index < 10) cell.fill = fills.INDHU;
 			});

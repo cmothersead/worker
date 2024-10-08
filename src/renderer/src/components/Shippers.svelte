@@ -99,7 +99,8 @@
 	let output = criticalShippers.map((shipper) => ({
 		...shipper,
 		count: undefined,
-		status: 'none'
+		status: 'none',
+		checked: true
 	}));
 	let status = 'not started';
 
@@ -107,6 +108,7 @@
 		status = 'running';
 		const simultaneousCount = 5;
 		const shipperPromise = async ({ name, accountNumbers }, index: number) => {
+			console.log(name);
 			output = output.map((shipper) =>
 				shipper.name === name ? { ...shipper, status: 'loading' } : shipper
 			);
@@ -118,16 +120,19 @@
 			return index;
 		};
 
-		const promises = criticalShippers
+		const activeShippers = output.filter(({ checked }) => checked === true);
+
+		const promises = activeShippers
 			.slice(0, simultaneousCount)
 			.map(async ({ name, accountNumbers }, index) =>
 				shipperPromise({ name, accountNumbers }, index)
 			);
-		for (let i = simultaneousCount; i <= criticalShippers.length; i++) {
-			const { name, accountNumbers } = criticalShippers[i];
+		for (let i = simultaneousCount; i <= activeShippers.length; i++) {
+			const { name, accountNumbers } = activeShippers[i];
 			const index = await Promise.race(promises);
 			promises.splice(index, 1, shipperPromise({ name, accountNumbers }, index));
 		}
+		await Promise.all(promises);
 		status = 'done';
 	}
 
@@ -135,6 +140,13 @@
 		(prev, { count }) => (count == undefined ? prev : prev + count),
 		0
 	);
+
+	function check(value: boolean) {
+		output = output.map((shipper) => ({ ...shipper, checked: value }));
+	}
+
+	let checkAll = true;
+	$: check(checkAll);
 </script>
 
 <div class="bg-slate-400 p-4 rounded-lg">
@@ -145,10 +157,12 @@
 			<span>{status}</span>
 			<span>{totalQuantity}</span>
 		</div>
+		<input type="checkbox" bind:checked={checkAll} />
 		<div class="flex flex-col gap-1">
 			{#each output as shipper}
 				<div class="bg-slate-100 py-1 px-4 rounded">
 					<div class="flex justify-between gap-4">
+						<input type="checkbox" bind:checked={shipper.checked} />
 						<div class="text-xs font-bold">
 							{shipper.name}
 						</div>

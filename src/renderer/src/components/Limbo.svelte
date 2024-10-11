@@ -7,6 +7,7 @@
 	let status: 'none' | 'loading' | 'done' | 'error' = 'none';
 	let settings = false;
 	let latestIndex = 0;
+	let config = undefined;
 	let output: {
 		topOrigin?: { code: string; quantity: number };
 		topDestination?: { code: string; quantity: number };
@@ -29,18 +30,23 @@
 		limboRunning = true;
 		const today = new Date(Date.now());
 		if (today.getHours() < 11) today.setDate(today.getDate() - 1);
-		const outData = await window.api.limbo.run({ date: today, headless });
+		const outData = await window.api.limbo.run({ date: today, untilIndex: latestIndex, headless });
 		output = { ...output, ...outData };
 		status = 'done';
 	}
 
 	async function configure() {
 		const existing = await window.api.limbo.getExisting();
+		config = (await window.api.config.read()).limbo;
+		latestIndex = config.untilIndex;
 		output = { ...output, ...existing };
-		if (output.topOrigin.code != undefined) {
+		if (output?.topOrigin?.code != undefined) {
 			status = 'done';
 		}
 	}
+
+	$: if (config?.untilIndex != undefined && config.untilIndex != latestIndex)
+		window.api.config.update({ limbo: { untilIndex: latestIndex } });
 
 	configure();
 </script>

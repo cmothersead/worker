@@ -10,14 +10,10 @@ export declare global {
 				getExisting: (flightNumbers: number[]) => Promise<any>;
 				cons: (args: { flightNumber: number; headless: boolean }) => Promise<number>;
 				open: (path: string) => void;
-				loadConfig: () => Promise<{ flightNumbers: number[] }>;
 				writeCONS: (flightCONS: { number: number; cons: string }) => void;
 			};
 			limbo: {
-				run: (args: {
-					date: Date;
-					headless: boolean;
-				}) => Promise<{
+				run: (args: { date: Date; untilIndex: number; headless: boolean }) => Promise<{
 					topOrigin: { code: string; quantity: number };
 					topDestination: { code: string; quantity: number };
 				}>;
@@ -33,6 +29,10 @@ export declare global {
 			};
 			shippers: {
 				run;
+			};
+			config: {
+				read: () => Promise<any>;
+				update: (updateObject: any) => void;
 			};
 		};
 	}

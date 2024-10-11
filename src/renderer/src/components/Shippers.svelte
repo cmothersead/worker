@@ -108,12 +108,10 @@
 		status = 'running';
 		const simultaneousCount = 5;
 		const shipperPromise = async ({ name, accountNumbers }, index: number) => {
-			console.log(name);
 			output = output.map((shipper) =>
 				shipper.name === name ? { ...shipper, status: 'loading' } : shipper
 			);
 			const count = await window.api.shippers.run({ name, accountNumbers, headless });
-			console.log(count);
 			output = output.map((shipper) =>
 				shipper.name === name ? { ...shipper, count, status: 'done' } : shipper
 			);
@@ -131,6 +129,7 @@
 			const { name, accountNumbers } = activeShippers[i];
 			const index = await Promise.race(promises);
 			promises.splice(index, 1, shipperPromise({ name, accountNumbers }, index));
+			console.log(promises.length);
 		}
 		await Promise.all(promises);
 		status = 'done';

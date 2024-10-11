@@ -12,12 +12,15 @@
 		status: 'done' | 'loading' | 'error' | 'none';
 	};
 
+	let config = undefined;
 	let flightNumbers = [];
+	let allFlightNumbers = [];
 	let laneToLaneOutput: flightInfo[] = [];
 
 	export let headless = true;
 	let l2lRunning = false;
 	let settings = false;
+	let search = '';
 
 	async function laneToLanes() {
 		laneToLaneOutput
@@ -37,8 +40,9 @@
 	}
 
 	async function configure() {
-		const config = await window.api.laneToLane.loadConfig();
+		config = (await window.api.config.read()).laneToLane;
 		flightNumbers = config.flightNumbers;
+		allFlightNumbers = config.allFlightNumbers.sort();
 		laneToLaneOutput = flightNumbers.sort().map((flightNumber) => ({
 			number: flightNumber,
 			dest: dests[flightNumber],
@@ -74,7 +78,7 @@
 		}));
 	});
 
-	function openFile(path) {
+	function openFile(path: string) {
 		window.api.laneToLane.open(path);
 	}
 
@@ -99,10 +103,45 @@
 			<Icon icon="mdi:gear" />
 		</button>
 	</div>
-	<ul class="flex flex-col gap-2 py-2">
-		{#if settings}
-			Settings
-		{:else}
+	{#if settings}
+		Settings
+		<div class="bg-slate-100 p-2 rounded">
+			<h1 class="text-lg font-bold">Flights</h1>
+			<input
+				type="text"
+				bind:value={search}
+				placeholder="Search Flights..."
+				class="p-1 rounded bg-slate-100"
+			/>
+			<div class="flex justify-around items-stretch h-72 overflow-hidden mt-1">
+				<div>
+					<span class="font-bold">Active</span>
+					<div>
+						{#each flightNumbers as fNum}
+							<div class="group hover:bg-red-400 flex items-center cursor-pointer px-1">
+								{fNum}
+								<Icon icon="raphael:arrowright" class="invisible group-hover:visible" />
+							</div>
+						{/each}
+					</div>
+				</div>
+				<div class="flex flex-col">
+					<span class="font-bold">Inactive</span>
+					<div class="overflow-y-auto">
+						{#each allFlightNumbers.filter((value) => (search != '' ? value
+										.toString()
+										.contains(search) : true)) as fNum}
+							<div class="group hover:bg-green-400 flex items-center cursor-pointer px-1">
+								<Icon icon="raphael:arrowleft" class="invisible group-hover:visible" />
+								{fNum}
+							</div>
+						{/each}
+					</div>
+				</div>
+			</div>
+		</div>
+	{:else}
+		<ul class="flex flex-col gap-2 py-2">
 			{#each laneToLaneOutput as flight}
 				<li class="bg-slate-100 py-2 px-4 rounded">
 					<div class="flex items-center justify-between gap-3">
@@ -149,6 +188,6 @@
 					</div>
 				</li>
 			{/each}
-		{/if}
-	</ul>
+		</ul>
+	{/if}
 </div>

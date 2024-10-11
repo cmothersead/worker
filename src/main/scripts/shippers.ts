@@ -73,6 +73,7 @@ export async function getShipperData(accountNumbers: string | string[], headless
 	const shipDateHeader = page.getByText('Ship Date').first();
 	const shipDateSection = shipDateHeader.locator('+ div');
 	const scrollHandle = shipDateSection.locator('.VerticalScrollbarContainer .ScrollbarHandle');
+	const scrollUpButton = shipDateSection.locator('.ScrollbarButton.sfpc-top');
 	const scrollDownButton = shipDateSection.locator('.ScrollbarButton.sfpc-bottom');
 	const shipDateCell = shipDateSection
 		.locator('.frozenColumnsContainer')
@@ -83,6 +84,10 @@ export async function getShipperData(accountNumbers: string | string[], headless
 				year: 'numeric'
 			})
 		)
+		.locator('..');
+	const totalDateCell = shipDateSection
+		.locator('.frozenColumnsContainer')
+		.getByText('Grand total')
 		.locator('..');
 	const ursaHeader = page.getByText('URSA').first();
 	const ursaCell = ursaHeader
@@ -102,28 +107,40 @@ export async function getShipperData(accountNumbers: string | string[], headless
 
 	while (true) {
 		try {
+			//Scroll section to the bottom if possible
+			await shipDateSection.hover();
+			await scrollHandle.waitFor({ timeout: 1000 });
+			await scrollHandle.dragTo(scrollDownButton);
+			break;
+		} catch {
+			try {
+				//If scrolling failed, check to see if already at the bottom/no scrollbar because list is too short
+				await totalDateCell.waitFor({ timeout: 1000 });
+				break;
+			} catch {}
+		}
+	}
+
+	while (true) {
+		try {
 			console.log('looking for ship date');
-			const shipDateRow = await shipDateCell.getAttribute('row', { timeout: 2000 });
+			const shipDateRow = await shipDateCell.getAttribute('row', { timeout: 1000 });
 			const shipDateValue = shipDateSection.locator(
 				`.valueCellsContainer div[row="${shipDateRow}"]`
 			);
-			console.log(getToday());
-			console.log(shipDateRow);
 			await shipDateValue.click();
-			await new Promise((r) => setTimeout(r, 200000));
-			const ursaRow = await ursaCell.getAttribute('row');
-			const ursaSection = ursaHeader.locator(`+ div .valueCellsContainer div[row="${ursaRow}"]`);
-			await ursaSection.click();
 			break;
 		} catch (error) {
 			console.error(error);
 			try {
 				await shipDateSection.hover();
-				await scrollHandle.waitFor({ timeout: 1000 });
-				await scrollHandle.dragTo(scrollDownButton);
+				await scrollUpButton.click();
 			} catch {}
 		}
 	}
+	const ursaRow = await ursaCell.getAttribute('row');
+	const ursaSection = ursaHeader.locator(`+ div .valueCellsContainer div[row="${ursaRow}"]`);
+	await ursaSection.click();
 	await packageInfoTab.click();
 	while (true) {
 		try {

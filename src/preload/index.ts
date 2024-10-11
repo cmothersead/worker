@@ -13,11 +13,11 @@ const api = {
 		cons: (args: { flightNumber: number; headless: boolean }) =>
 			ipcRenderer.invoke('laneToLane:cons', args),
 		open: (path: string) => ipcRenderer.send('laneToLane:open', path),
-		loadConfig: () => ipcRenderer.invoke('laneToLane:getConfig'),
 		writeCONS: (consNumbers: number[]) => ipcRenderer.send('laneToLane:writeCONS', consNumbers)
 	},
 	limbo: {
-		run: (args: { date: Date; headless: boolean }) => ipcRenderer.invoke('limbo:run', args),
+		run: (args: { date: Date; untilIndex: number; headless: boolean }) =>
+			ipcRenderer.invoke('limbo:run', args),
 		receiveUpdate: (callback) =>
 			ipcRenderer.on('limbo:update', (_event, value) => callback(_event, value)),
 		getExisting: () => ipcRenderer.invoke('limbo:existing')
@@ -34,6 +34,10 @@ const api = {
 	shippers: {
 		run: (args: { name: string; accountNumbers: string | string[]; headless: boolean }) =>
 			ipcRenderer.invoke('shippers:run', args)
+	},
+	config: {
+		read: () => ipcRenderer.invoke('config:read'),
+		update: (updateObject) => ipcRenderer.send('config:update', updateObject)
 	}
 };
 

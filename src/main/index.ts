@@ -10,11 +10,14 @@ import { readFileSync, writeFileSync } from 'fs';
 import { getExistingLIMBO, limbo } from './scripts/limbo';
 import { shipper, shippers } from './scripts/shippers';
 
-const username = '5260673';
-const password = 'OldPosition1';
+const { username, password } = readConfig();
 
 function readConfig() {
 	return JSON.parse(readFileSync('config.json').toString());
+}
+
+function writeConfig(data: any) {
+	writeFileSync('config.json', JSON.stringify(data));
 }
 
 function readCache() {
@@ -75,10 +78,10 @@ function createWindow(): void {
 	ipcMain.handle('laneToLane:existing', (_, flightNumbers) =>
 		getExistingLaneToLanes(flightNumbers)
 	);
-	ipcMain.handle('laneToLane:getConfig', () => {
-		return readConfig().laneToLane;
-	});
-	ipcMain.handle('limbo:run', async (_, { date, headless }) => await limbo({ date, headless }));
+	ipcMain.handle(
+		'limbo:run',
+		async (_, { date, untilIndex, headless }) => await limbo({ date, untilIndex, headless })
+	);
 	ipcMain.handle('limbo:existing', async () => await getExistingLIMBO());
 	ipcMain.handle(
 		'scorecard:run',
@@ -114,6 +117,11 @@ function createWindow(): void {
 	});
 	ipcMain.handle('shippers:run', async (_, { name, accountNumbers, headless }) => {
 		return await shipper({ name, accountNumbers, headless });
+	});
+	ipcMain.handle('config:read', () => readConfig());
+	ipcMain.on('config:update', (_, updateObject) => {
+		const config = readConfig();
+		writeConfig({ ...config, ...updateObject });
 	});
 
 	// HMR for renderer base on electron-vite cli.

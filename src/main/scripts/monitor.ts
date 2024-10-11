@@ -7,54 +7,60 @@ export async function monitorShipper(inPath: string, outPath: string, headless: 
 	console.log('Shipper started');
 	const today = getToday();
 	const todayString = `${today.toLocaleDateString('en-us', { month: '2-digit' })}${today.toLocaleDateString('en-us', { day: '2-digit' })}`;
-	const oldWorkbook = new Excel.Workbook();
-	await oldWorkbook.xlsx.readFile(inPath);
 	const newWorkbook = new Excel.Workbook();
 	await newWorkbook.xlsx.readFile(outPath);
+	const oldWorkbook = new Excel.Workbook();
+	await oldWorkbook.xlsx.readFile(inPath);
 
-	const todaySheet = newWorkbook.getWorksheet(todayString) ?? newWorkbook.addWorksheet(todayString);
-	const sheetNames = newWorkbook.worksheets
-		.map(({ name }) => name)
-		.sort((a, b) => b.localeCompare(a))
-		.forEach((name, index) => {
-			const sheet = newWorkbook.getWorksheet(name);
-			if (sheet == undefined) return;
-			sheet.orderNo = index + 1;
-		});
-	todaySheet.orderNo = 0;
-	newWorkbook.views = [
-		{
-			x: 0,
-			y: 0,
-			width: 10000,
-			height: 20000,
-			firstSheet: 0,
-			activeTab: 0,
-			visibility: 'visible'
-		}
-	];
-	const oldTodaySheet = oldWorkbook.getWorksheet(todayString);
-	if (oldTodaySheet == undefined)
-		throw new Error(`Sheet: ${todayString} not found in file: ${inPath}`);
-	oldTodaySheet.eachRow((row) => todaySheet.addRow(row.values));
-	const trackingNumberColumn = todaySheet.getColumn(1);
-	trackingNumberColumn.numFmt = '0';
-	trackingNumberColumn.width = 13;
-	todaySheet.spliceColumns(
-		5,
-		0,
-		['Tracking Number'],
-		['HIPS Date Time IND Earliest'],
-		['COMM Comment Latest'],
-		['CONS Time Latest'],
-		['CONS Loc Latest'],
-		['NAK All'],
-		['LBL All'],
-		['HOPS Date Time IND Latest']
-	);
-	todaySheet.getColumn('E').numFmt = '0';
-	todaySheet.getColumn('E').width = 13;
-	todaySheet.getColumn('H').numFmt = '0';
+	var todaySheet = newWorkbook.getWorksheet(todayString);
+
+	if (todaySheet === undefined) {
+		todaySheet = newWorkbook.addWorksheet(todayString);
+
+		newWorkbook.worksheets
+			.map(({ name }) => name)
+			.sort((a, b) => b.localeCompare(a))
+			.forEach((name, index) => {
+				const sheet = newWorkbook.getWorksheet(name);
+				if (sheet == undefined) return;
+				sheet.orderNo = index + 1;
+			});
+		todaySheet.orderNo = 0;
+		newWorkbook.views = [
+			{
+				x: 0,
+				y: 0,
+				width: 10000,
+				height: 20000,
+				firstSheet: 0,
+				activeTab: 0,
+				visibility: 'visible'
+			}
+		];
+
+		const oldTodaySheet = oldWorkbook.getWorksheet(todayString);
+		if (oldTodaySheet == undefined)
+			throw new Error(`Sheet: ${todayString} not found in file: ${inPath}`);
+		oldTodaySheet.eachRow((row) => todaySheet.addRow(row.values));
+		const trackingNumberColumn = todaySheet.getColumn(1);
+		trackingNumberColumn.numFmt = '0';
+		trackingNumberColumn.width = 13;
+		todaySheet.spliceColumns(
+			5,
+			0,
+			['Tracking Number'],
+			['HIPS Date Time IND Earliest'],
+			['COMM Comment Latest'],
+			['CONS Time Latest'],
+			['CONS Loc Latest'],
+			['NAK All'],
+			['LBL All'],
+			['HOPS Date Time IND Latest']
+		);
+		todaySheet.getColumn('E').numFmt = '0';
+		todaySheet.getColumn('E').width = 13;
+		todaySheet.getColumn('H').numFmt = '0';
+	}
 
 	const fills: { [key: string]: FillPattern } = {
 		INDHU: {
@@ -63,7 +69,7 @@ export async function monitorShipper(inPath: string, outPath: string, headless: 
 			fgColor: { argb: 'FFFFFF00' }
 		}
 	};
-
+	const trackingNumberColumn = todaySheet.getColumn(1);
 	const trackingNumbers = trackingNumberColumn.values.slice(2);
 	const results = await dreuiReport(monitorConfig, trackingNumbers, headless);
 	console.log('dreui done');
@@ -75,16 +81,12 @@ export async function monitorShipper(inPath: string, outPath: string, headless: 
 		if (Number.isSafeInteger(parseInt(result[0]))) result[0] = parseInt(result[0]);
 		if (Number.isSafeInteger(parseInt(result[3]))) result[3] = parseInt(result[3]);
 		row.values = [...row.values.slice(1, 5), ...result, ...row.values.slice(13)];
-		if (result[4] == 'INDHU') {
-			row.eachCell({ includeEmpty: true }, (cell, index) => {
-				if (index < 10) cell.fill = fills.INDHU;
-			});
-		}
 	});
 
 	const sortedRows = todaySheet
 		.getRows(1, todaySheet.rowCount - 1)
 		?.map(({ values }) => values)
+		// ?.filter((values) => values[2].startsWith('N'))
 		?.toSorted((a, b) =>
 			a[9] === 'CONS Loc Latest'
 				? -1

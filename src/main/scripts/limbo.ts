@@ -15,7 +15,15 @@ async function waitForLoad(page: Page) {
 	await loader.waitFor({ state: 'hidden', timeout: 480000 });
 }
 
-export async function limbo({ date, headless }: { date: Date; headless: boolean }) {
+export async function limbo({
+	date,
+	untilIndex,
+	headless
+}: {
+	date: Date;
+	untilIndex: number;
+	headless: boolean;
+}) {
 	const browser = await chromium.launch({ headless });
 	const page = await browser.newPage();
 	await page.goto(
@@ -75,14 +83,24 @@ export async function limbo({ date, headless }: { date: Date; headless: boolean 
 	const headers = limboData
 		.splice(0, 1)[0]
 		.map((header) => (header.includes('Tracking Number') ? 'Tracking Number' : header));
+
+	const until = [
+		'B4 22:00',
+		'22:00-22:59',
+		'23:00-23:59',
+		'00:00-00:29',
+		'00:30-00:59',
+		'01:00-01:29',
+		'01:30-01:59',
+		'02:00-02:59',
+		'After 23:59'
+	];
 	const objects = limboData
 		.map((entry) => _.zipObject(headers, entry))
 		.filter(
 			(values) =>
 				values['LIMBO Location'].includes('IND') &&
-				['B4 22:00', '22:00-22:59', '23:00-23:59', '00:00-00:29', '00:30-00:59'].includes(
-					values['At MSL First Scan Window']
-				)
+				until.slice(0, untilIndex + 1).includes(values['At MSL First Scan Window'])
 		);
 	const output = [headers, ...objects.map((object) => headers.map((header) => object[header]))];
 
@@ -275,7 +293,7 @@ export async function limbo({ date, headless }: { date: Date; headless: boolean 
 	if (!existsSync(monthDirPath)) {
 		mkdirSync(monthDirPath);
 	}
-	blank.xlsx.writeFile(archiveFilePath);
+	await blank.xlsx.writeFile(archiveFilePath);
 	copyFileSync(archiveFilePath, shareFilePath);
 	return {
 		topOrigin: { code: topOrigin, quantity: topOriginCount },
@@ -295,6 +313,7 @@ export async function getExistingLIMBO() {
 	})}.xlsx`;
 
 	const workbook = new Excel.Workbook();
+	if (!existsSync(shareFilePath)) return undefined;
 	await workbook.xlsx.readFile(shareFilePath);
 	const originSheet = workbook.getWorksheet('Origin');
 	const topOrigin = {

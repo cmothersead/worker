@@ -22,6 +22,8 @@
 	let l2lRunning = $state(false);
 	let settings = $state(false);
 	let search = $state('');
+	let outputDirectoryPath = $state('');
+	let archiveDirectoryPath = $state('');
 
 	async function laneToLanes() {
 		laneToLaneOutput
@@ -36,6 +38,8 @@
 		}));
 		await window.api.laneToLane.run({
 			consNumber: laneToLaneOutput.find(({ number }) => number === flightNumber).cons,
+			outputDirectoryPath,
+			archiveDirectoryPath,
 			headless
 		});
 	}
@@ -44,6 +48,8 @@
 		config = (await window.api.config.read()).laneToLane;
 		flightNumbers = config.flightNumbers;
 		allFlightNumbers = config.allFlightNumbers.sort();
+		outputDirectoryPath = config.outputDirectoryPath;
+		archiveDirectoryPath = config.archiveDirectoryPath;
 		laneToLaneOutput = flightNumbers.sort().map((flightNumber) => ({
 			number: flightNumber,
 			dest: dests[flightNumber],
@@ -55,8 +61,12 @@
 		await getCONS();
 		await getExisting();
 	}
+
 	async function getExisting() {
-		const existing = await window.api.laneToLane.getExisting([...flightNumbers]);
+		const existing = await window.api.laneToLane.getExisting({
+			flightNumbers: [...flightNumbers],
+			outputDirectoryPath
+		});
 		laneToLaneOutput = laneToLaneOutput.map((flight) => ({
 			...flight,
 			...existing.find(({ number }) => number === flight.number)
@@ -88,6 +98,21 @@
 	$effect(() =>
 		window.api.laneToLane.writeCONS(laneToLaneOutput?.map(({ number, cons }) => ({ number, cons })))
 	);
+	$effect(() => {
+		console.log('value updated');
+		window.api.config.update(
+			JSON.parse(
+				JSON.stringify({
+					laneToLane: {
+						flightNumbers,
+						allFlightNumbers,
+						outputDirectoryPath,
+						archiveDirectoryPath
+					}
+				})
+			)
+		);
+	});
 </script>
 
 <div class="flex flex-col bg-slate-400 p-4 rounded-lg">
@@ -106,37 +131,62 @@
 	</div>
 	{#if settings}
 		Settings
-		<div class="bg-slate-100 p-2 rounded">
-			<h1 class="text-lg font-bold">Flights</h1>
-			<input
-				type="text"
-				bind:value={search}
-				placeholder="Search Flights..."
-				class="p-1 rounded bg-slate-100"
-			/>
-			<div class="flex justify-around items-stretch h-72 overflow-hidden mt-1">
-				<div>
-					<span class="font-bold">Active</span>
-					<div>
-						{#each flightNumbers as fNum}
-							<div class="group hover:bg-red-400 flex items-center cursor-pointer px-1">
-								{fNum}
-								<Icon icon="raphael:arrowright" class="invisible group-hover:visible" />
-							</div>
-						{/each}
-					</div>
+		<div class="flex flex-col gap-2">
+			<div class="bg-slate-100 p-2 rounded">
+				<span class="text-lg font-bold">Output Directory</span>
+				<div class="flex justify-between">
+					<span class="text-xs">{outputDirectoryPath}</span>
+					<button
+						class="bg-blue-400 px-1 rounded"
+						onclick={async () => (outputDirectoryPath = (await window.api.dialog.folder()).at(0))}
+						>Change</button
+					>
 				</div>
-				<div class="flex flex-col">
-					<span class="font-bold">Inactive</span>
-					<div class="overflow-y-auto">
-						{#each allFlightNumbers.filter((value) => (search != '' ? value
-										.toString()
-										.contains(search) : true)) as fNum}
-							<div class="group hover:bg-green-400 flex items-center cursor-pointer px-1">
-								<Icon icon="raphael:arrowleft" class="invisible group-hover:visible" />
-								{fNum}
-							</div>
-						{/each}
+			</div>
+			<div class="bg-slate-100 p-2 rounded">
+				<span class="text-md font-bold">Archive Directory</span>
+				<span class="text-sm">(opt)</span>
+				<div class="flex justify-between">
+					<span class="text-xs">{archiveDirectoryPath}</span>
+					<button
+						class="bg-blue-400 px-1 rounded"
+						onclick={async () => (archiveDirectoryPath = (await window.api.dialog.folder()).at(0))}
+						>Change</button
+					>
+				</div>
+			</div>
+			<div class="bg-slate-100 p-2 rounded">
+				<h1 class="text-lg font-bold">Flights</h1>
+				<input
+					type="text"
+					bind:value={search}
+					placeholder="Search Flights..."
+					class="p-1 rounded bg-slate-100"
+				/>
+				<div class="flex justify-around items-stretch h-72 overflow-hidden mt-1">
+					<div>
+						<span class="font-bold">Active</span>
+						<div>
+							{#each flightNumbers as fNum}
+								<div class="group hover:bg-red-400 flex items-center cursor-pointer px-1">
+									{fNum}
+									<Icon icon="raphael:arrowright" class="invisible group-hover:visible" />
+								</div>
+							{/each}
+						</div>
+					</div>
+					<div class="flex flex-col">
+						<span class="font-bold">Inactive</span>
+						<div class="overflow-y-auto">
+							{#each allFlightNumbers.filter((value) => (search != '' ? value
+											.toString()
+											.contains(search) : true)) as fNum}
+								<div class="group hover:bg-green-400 flex items-center cursor-pointer px-1">
+									<Icon icon="raphael:arrowleft" class="invisible group-hover:visible" />
+									{fNum}
+								</div>
+							{/each}
+						</div>
 					</div>
 				</div>
 			</div>

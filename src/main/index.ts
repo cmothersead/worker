@@ -1,4 +1,4 @@
-import { app, shell, BrowserWindow, ipcMain } from 'electron';
+import { app, shell, BrowserWindow, ipcMain, dialog } from 'electron';
 import { join } from 'path';
 import { electronApp, optimizer, is } from '@electron-toolkit/utils';
 import { getToday } from './scripts';
@@ -57,9 +57,11 @@ function createWindow(): void {
 	// IPC
 	ipcMain.on(
 		'laneToLane:run',
-		async (_, { consNumber, headless }) =>
+		async (_, { consNumber, outputDirectoryPath, archiveDirectoryPath, headless }) =>
 			await laneToLane({
 				consNumber,
+				outputDirectoryPath,
+				archiveDirectoryPath,
 				headless,
 				signal,
 				window: mainWindow,
@@ -75,18 +77,10 @@ function createWindow(): void {
 		return await getCONSNumber({ flightNumber, headless, window: mainWindow, username, password });
 	});
 	ipcMain.on('laneToLane:open', (_, path) => shell.openPath(path));
-	ipcMain.handle('laneToLane:existing', (_, flightNumbers) =>
-		getExistingLaneToLanes(flightNumbers)
-	);
-	ipcMain.handle(
-		'limbo:run',
-		async (_, { date, untilIndex, headless }) => await limbo({ date, untilIndex, headless })
-	);
+	ipcMain.handle('laneToLane:existing', (_, args) => getExistingLaneToLanes(args));
+	ipcMain.handle('limbo:run', async (_, args) => await limbo(args));
 	ipcMain.handle('limbo:existing', async () => await getExistingLIMBO());
-	ipcMain.handle(
-		'scorecard:run',
-		async (_, { trackingNumbers, headless }) => await scorecard({ trackingNumbers, headless })
-	);
+	ipcMain.handle('scorecard:run', async (_, args) => await scorecard(args));
 	ipcMain.on('stop', () => {
 		console.log('aborting');
 		controller.abort();
@@ -123,6 +117,9 @@ function createWindow(): void {
 		const config = readConfig();
 		writeConfig({ ...config, ...updateObject });
 	});
+	ipcMain.handle('dialog:folder', () =>
+		dialog.showOpenDialogSync({ properties: ['openDirectory'] })
+	);
 
 	// HMR for renderer base on electron-vite cli.
 	// Load the remote URL for development or the local html file for production.

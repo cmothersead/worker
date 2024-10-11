@@ -5,9 +5,17 @@ export declare global {
 		electron: ElectronAPI;
 		api: {
 			laneToLane: {
-				run: (args: { consNumber: number; headless: boolean }) => Promise<any>;
+				run: (args: {
+					consNumber: number;
+					outputDirectoryPath: string;
+					archiveDirectoryPath: string;
+					headless: boolean;
+				}) => Promise<any>;
 				receiveUpdate;
-				getExisting: (flightNumbers: number[]) => Promise<any>;
+				getExisting: (args: {
+					flightNumbers: number[];
+					outputDirectoryPath: string;
+				}) => Promise<any>;
 				cons: (args: { flightNumber: number; headless: boolean }) => Promise<number>;
 				open: (path: string) => void;
 				writeCONS: (flightCONS: { number: number; cons: string }) => void;
@@ -33,6 +41,9 @@ export declare global {
 			config: {
 				read: () => Promise<any>;
 				update: (updateObject: any) => void;
+			};
+			dialog: {
+				folder: () => Promise<string>;
 			};
 		};
 	}

@@ -6,8 +6,6 @@ import { BrowserWindow } from 'electron';
 import { getToday, getYesterday } from '.';
 
 const laneToLaneTemplatePath = 'C:/Users/5260673/OneDrive - MyFedEx/Documents/lanetolane.xlsx';
-const outputDirectory = 'C:/Users/5260673/OneDrive - MyFedEx/Communication/Control Room Files';
-const archiveDirectory = 'C:/Users/5260673/OneDrive - MyFedEx/Lane to Lanes';
 const dests = {
 	1623: 'BUR',
 	1633: 'BUR',
@@ -66,6 +64,8 @@ const dests = {
 
 export async function laneToLane({
 	consNumber,
+	outputDirectoryPath,
+	archiveDirectoryPath,
 	headless,
 	username,
 	password,
@@ -73,6 +73,8 @@ export async function laneToLane({
 	window
 }: {
 	consNumber: number | string;
+	outputDirectoryPath: string;
+	archiveDirectoryPath: string;
 	headless: boolean;
 	username: string;
 	password: string;
@@ -83,11 +85,11 @@ export async function laneToLane({
 	const yesterday = getYesterday();
 
 	if (signal.aborted) return;
-	deleteOldLaneToLanes(yesterday, outputDirectory, window);
+	deleteOldLaneToLanes(yesterday, outputDirectoryPath, window);
 
 	if (consNumber == undefined) return;
 	if (signal.aborted) return;
-	const downloadPath = await downloadReportData({
+	const downloadData = await downloadReportData({
 		consNumber,
 		signal,
 		username,
@@ -96,17 +98,26 @@ export async function laneToLane({
 	});
 
 	if (signal.aborted) return;
-	await saveOutput(today, downloadPath, window);
+	await saveOutput(today, downloadData, outputDirectoryPath, archiveDirectoryPath, window);
 }
 
-export async function getExistingLaneToLanes(flightNumbers: number[]) {
+export async function getExistingLaneToLanes({
+	flightNumbers,
+	outputDirectoryPath
+}: {
+	flightNumbers: number[];
+	outputDirectoryPath: string;
+}) {
 	const today = getToday();
 	return flightNumbers
 		.map((flight) => ({
 			number: flight,
-			path: `${outputDirectory}/F${flight} ${dests[flight]} ${today.toLocaleDateString('en-us', {
-				month: '2-digit'
-			})}${today.toLocaleDateString('en-us', { day: '2-digit' })}.xlsx`,
+			path: `${outputDirectoryPath}/F${flight} ${dests[flight]} ${today.toLocaleDateString(
+				'en-us',
+				{
+					month: '2-digit'
+				}
+			)}${today.toLocaleDateString('en-us', { day: '2-digit' })}.xlsx`,
 			status: 'done'
 		}))
 		.filter(({ path }) => existsSync(path));
@@ -298,21 +309,13 @@ async function downloadReportData({
 	});
 }
 
-async function saveOutput(today: Date, dataString: string, window: BrowserWindow) {
-	const root = archiveDirectory;
-	const monthDir = `${root}/${today.toLocaleDateString('en-us', {
-		month: '2-digit'
-	})}-${today.toLocaleDateString('en-us', {
-		year: '2-digit'
-	})} ${today.toLocaleDateString('en-us', { month: 'short' })}`;
-	const dayDir = `${monthDir}/${today.toLocaleDateString('en-us', {
-		month: '2-digit'
-	})}${today.toLocaleDateString('en-us', { day: '2-digit' })}`;
-
-	if (!existsSync(dayDir)) {
-		mkdirSync(dayDir, { recursive: true });
-	}
-
+async function saveOutput(
+	today: Date,
+	dataString: string,
+	outputDirectoryPath: string,
+	archiveDirectoryPath: string,
+	window: BrowserWindow
+) {
 	const source = new AdmZip(laneToLaneTemplatePath);
 	const sheet = source.getEntry('xl/worksheets/sheet5.xml');
 	let flight = '';
@@ -334,7 +337,7 @@ async function saveOutput(today: Date, dataString: string, window: BrowserWindow
 	sheet.setData(newData);
 
 	source.writeZip(
-		`${outputDirectory}/F${flight} ${dests[flight]} ${today.toLocaleDateString('en-us', {
+		`${outputDirectoryPath}/F${flight} ${dests[flight]} ${today.toLocaleDateString('en-us', {
 			month: '2-digit'
 		})}${today.toLocaleDateString('en-us', { day: '2-digit' })}.xlsx`
 	);
@@ -367,19 +370,34 @@ async function saveOutput(today: Date, dataString: string, window: BrowserWindow
 	// 	})}${today.toLocaleDateString('en-us', { day: '2-digit' })}.xlsx`
 	// );
 
-	copyFileSync(
-		`${outputDirectory}/F${flight} ${dests[flight]} ${today.toLocaleDateString('en-us', {
+	if (archiveDirectoryPath != undefined && archiveDirectoryPath != '') {
+		const root = archiveDirectoryPath;
+		const monthDir = `${root}/${today.toLocaleDateString('en-us', {
 			month: '2-digit'
-		})}${today.toLocaleDateString('en-us', { day: '2-digit' })}.xlsx`,
-		`${dayDir}/Lane to Lane - ${flight}-${dests[flight]} - ${today.toLocaleDateString('en-us', {
+		})}-${today.toLocaleDateString('en-us', {
+			year: '2-digit'
+		})} ${today.toLocaleDateString('en-us', { month: 'short' })}`;
+		const dayDir = `${monthDir}/${today.toLocaleDateString('en-us', {
 			month: '2-digit'
-		})}${today.toLocaleDateString('en-us', { day: '2-digit' })}.xlsx`
-	);
+		})}${today.toLocaleDateString('en-us', { day: '2-digit' })}`;
+
+		if (!existsSync(dayDir)) {
+			mkdirSync(dayDir, { recursive: true });
+		}
+		copyFileSync(
+			`${outputDirectoryPath}/F${flight} ${dests[flight]} ${today.toLocaleDateString('en-us', {
+				month: '2-digit'
+			})}${today.toLocaleDateString('en-us', { day: '2-digit' })}.xlsx`,
+			`${dayDir}/Lane to Lane - ${flight}-${dests[flight]} - ${today.toLocaleDateString('en-us', {
+				month: '2-digit'
+			})}${today.toLocaleDateString('en-us', { day: '2-digit' })}.xlsx`
+		);
+	}
 
 	window.webContents.send('laneToLane:update', {
 		number: parseInt(flight),
 		status: 'done',
-		path: `${outputDirectory}/F${flight} ${dests[flight]} ${today.toLocaleDateString('en-us', {
+		path: `${outputDirectoryPath}/F${flight} ${dests[flight]} ${today.toLocaleDateString('en-us', {
 			month: '2-digit'
 		})}${today.toLocaleDateString('en-us', { day: '2-digit' })}.xlsx`
 	});

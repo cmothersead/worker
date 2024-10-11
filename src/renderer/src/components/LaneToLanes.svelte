@@ -2,6 +2,7 @@
 	import Icon from '@iconify/svelte';
 	import { dests, cities } from '../data';
 	import { statusIcons } from '.';
+	import { onMount } from 'svelte';
 
 	type flightInfo = {
 		number: number;
@@ -12,15 +13,15 @@
 		status: 'done' | 'loading' | 'error' | 'none';
 	};
 
-	let config = undefined;
-	let flightNumbers = [];
-	let allFlightNumbers = [];
-	let laneToLaneOutput: flightInfo[] = [];
+	let { headless = true } = $props();
 
-	export let headless = true;
-	let l2lRunning = false;
-	let settings = false;
-	let search = '';
+	let config = $state(undefined);
+	let flightNumbers = $state([]);
+	let allFlightNumbers = $state([]);
+	let laneToLaneOutput: flightInfo[] = $state([]);
+	let l2lRunning = $state(false);
+	let settings = $state(false);
+	let search = $state('');
 
 	async function laneToLanes() {
 		laneToLaneOutput
@@ -55,7 +56,7 @@
 		await getExisting();
 	}
 	async function getExisting() {
-		const existing = await window.api.laneToLane.getExisting(flightNumbers);
+		const existing = await window.api.laneToLane.getExisting([...flightNumbers]);
 		laneToLaneOutput = laneToLaneOutput.map((flight) => ({
 			...flight,
 			...existing.find(({ number }) => number === flight.number)
@@ -82,10 +83,10 @@
 		window.api.laneToLane.open(path);
 	}
 
-	configure();
+	onMount(configure);
 
-	$: window.api.laneToLane.writeCONS(
-		laneToLaneOutput?.map(({ number, cons }) => ({ number, cons }))
+	$effect(() =>
+		window.api.laneToLane.writeCONS(laneToLaneOutput?.map(({ number, cons }) => ({ number, cons })))
 	);
 </script>
 
@@ -96,10 +97,10 @@
 			class="rounded px-2 bg-green-400"
 			class:bg-slate-400={l2lRunning}
 			class:cursor-wait={l2lRunning}
-			on:click={laneToLanes}
+			onclick={laneToLanes}
 			disabled={l2lRunning}>Start All</button
 		>
-		<button class="rounded px-2 bg-gray-600 text-white" on:click={() => (settings = !settings)}>
+		<button class="rounded px-2 bg-gray-600 text-white" onclick={() => (settings = !settings)}>
 			<Icon icon="mdi:gear" />
 		</button>
 	</div>
@@ -174,13 +175,13 @@
 								<button
 									class:hidden={flight.status != 'none' || flight.cons == undefined}
 									class="group-hover:block cursor-pointer"
-									on:click={() => laneToLane(flight.number)}
+									onclick={() => laneToLane(flight.number)}
 								>
 									<Icon icon={statusIcons['refresh']} class="text-xl text-gray-600" />
 								</button>
 							</div>
 							{#if flight.path}
-								<button class="cursor-pointer" on:click={() => openFile(flight.path)}>
+								<button class="cursor-pointer" onclick={() => openFile(flight.path)}>
 									<Icon icon="majesticons:open" class="text-xl" />
 								</button>
 							{/if}

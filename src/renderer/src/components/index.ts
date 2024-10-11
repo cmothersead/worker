@@ -2,6 +2,7 @@ export { default as LaneToLanes } from './LaneToLanes.svelte';
 export { default as Limbo } from './Limbo.svelte';
 export { default as Monitor } from './Monitor.svelte';
 export { default as Scorecard } from './Scorecard.svelte';
+export { default as Shippers } from './Shippers.svelte';
 
 export const statusIcons = {
 	loading: 'eos-icons:three-dots-loading',

@@ -2,16 +2,15 @@
 	import Icon from '@iconify/svelte';
 	import { statusIcons } from '.';
 
-	export let headless = true;
-	let limboRunning = false;
-	let status: 'none' | 'loading' | 'done' | 'error' = 'none';
-	let settings = false;
-	let latestIndex = 0;
-	let config = undefined;
+	let { headless = true } = $props();
+	let status: 'none' | 'loading' | 'done' | 'error' = $state('none');
+	let settings = $state(false);
+	let latestIndex = $state(0);
+	let config = $state(undefined);
 	let output: {
 		topOrigin?: { code: string; quantity: number };
 		topDestination?: { code: string; quantity: number };
-	} = {};
+	} = $state({});
 
 	const latestValues = [
 		{ value: 'B4 22:00', display: '22:00' },
@@ -27,7 +26,6 @@
 
 	async function limbo() {
 		status = 'loading';
-		limboRunning = true;
 		const today = new Date(Date.now());
 		if (today.getHours() < 11) today.setDate(today.getDate() - 1);
 		const outData = await window.api.limbo.run({ date: today, untilIndex: latestIndex, headless });
@@ -45,8 +43,10 @@
 		}
 	}
 
-	$: if (config?.untilIndex != undefined && config.untilIndex != latestIndex)
-		window.api.config.update({ limbo: { untilIndex: latestIndex } });
+	$effect(() => {
+		if (config?.untilIndex != undefined && config.untilIndex != latestIndex)
+			window.api.config.update({ limbo: { untilIndex: latestIndex } });
+	});
 
 	configure();
 </script>
@@ -54,13 +54,13 @@
 <div class="bg-slate-400 p-4 rounded-lg">
 	<h1 class="text-xl font-bold">LIMBO</h1>
 	<div class="flex justify-between">
-		<button class="rounded px-2 bg-green-400" on:click={limbo}>Start</button>
+		<button class="rounded px-2 bg-green-400" onclick={limbo}>Start</button>
 		{#if settings}
-			<button class="rounded px-2 bg-gray-600 text-white" on:click={() => (settings = !settings)}>
+			<button class="rounded px-2 bg-gray-600 text-white" onclick={() => (settings = !settings)}>
 				Save
 			</button>
 		{:else}
-			<button class="rounded px-2 bg-gray-600 text-white" on:click={() => (settings = !settings)}>
+			<button class="rounded px-2 bg-gray-600 text-white" onclick={() => (settings = !settings)}>
 				<Icon icon="mdi:gear" />
 			</button>
 		{/if}

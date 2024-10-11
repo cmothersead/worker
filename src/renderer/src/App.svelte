@@ -1,10 +1,6 @@
 <script lang="ts">
-	import { LaneToLanes, Limbo, Scorecard } from './components';
-	import Monitor from './components/Monitor.svelte';
-	import Shippers from './components/Shippers.svelte';
-	let headless = true;
-
-	// window.electron.ipcRenderer.send('test');
+	import { LaneToLanes, Limbo, Scorecard, Monitor, Shippers } from './components';
+	let headless = $state(true);
 </script>
 
 <div class="container mx-auto my-10">

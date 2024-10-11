@@ -2,7 +2,6 @@
 	import Icon from '@iconify/svelte';
 	import { statusIcons } from '.';
 
-	export let headless = true;
 	const criticalShippers = [
 		{
 			name: 'Abbott',
@@ -96,13 +95,16 @@
 		}
 	];
 
-	let output = criticalShippers.map((shipper) => ({
-		...shipper,
-		count: undefined,
-		status: 'none',
-		checked: true
-	}));
-	let status = 'not started';
+	let { headless = true } = $props();
+	let output = $state(
+		criticalShippers.map((shipper) => ({
+			...shipper,
+			count: undefined,
+			status: 'none',
+			checked: true
+		}))
+	);
+	let status = $state('not started');
 
 	async function shippers() {
 		status = 'running';
@@ -135,28 +137,29 @@
 		status = 'done';
 	}
 
-	$: totalQuantity = output.reduce(
-		(prev, { count }) => (count == undefined ? prev : prev + count),
-		0
+	let totalQuantity = $derived(
+		output.reduce((prev, { count }) => (count == undefined ? prev : prev + count), 0)
 	);
 
-	function check(value: boolean) {
-		output = output.map((shipper) => ({ ...shipper, checked: value }));
-	}
-
-	let checkAll = true;
-	$: check(checkAll);
+	let checkAll = $state(true);
 </script>
 
 <div class="bg-slate-400 p-4 rounded-lg">
 	<h1 class="text-xl font-bold">Shippers</h1>
 	<div class="flex flex-col gap-1">
-		<button class="bg-green-500" on:click={shippers}>Let's Go!</button>
+		<button class="bg-green-500" onclick={shippers}>Let's Go!</button>
 		<div class="flex justify-between">
 			<span>{status}</span>
 			<span>{totalQuantity}</span>
 		</div>
-		<input type="checkbox" bind:checked={checkAll} />
+		<input
+			type="checkbox"
+			checked={checkAll}
+			onclick={() => {
+				checkAll = !checkAll;
+				output = output.map((shipper) => ({ ...shipper, checked: checkAll }));
+			}}
+		/>
 		<div class="flex flex-col gap-1">
 			{#each output as shipper}
 				<div class="bg-slate-100 py-1 px-4 rounded">

@@ -1,10 +1,10 @@
 <script lang="ts">
 	import Icon from '@iconify/svelte';
 
-	export let headless = true;
-	let settings = false;
-	let shippers = [];
-	let outbounds = [];
+	let { headless = true } = $props();
+	let settings = $state(false);
+	let shippers = $state([]);
+	let outbounds = $state([]);
 
 	async function getShippers() {
 		const config = await window.api.monitor.shippers();
@@ -17,6 +17,10 @@
 	}
 
 	getShippers();
+
+	function getCurrentSelected() {
+		return JSON.parse(JSON.stringify([...shippers.filter(({ selected }) => selected)]));
+	}
 </script>
 
 <div class="bg-slate-400 p-4 rounded-lg">
@@ -25,16 +29,13 @@
 		<div class="flex justify-between">
 			<button
 				class="bg-green-400 rounded px-2"
-				on:click={() =>
+				onclick={() =>
 					window.api.monitor.run({
-						data: [
-							...shippers.filter(({ selected }) => selected),
-							...outbounds.filter(({ selected }) => selected)
-						],
+						data: getCurrentSelected(),
 						headless
 					})}>Run</button
 			>
-			<button class="rounded px-2 bg-gray-600 text-white" on:click={() => (settings = !settings)}>
+			<button class="rounded px-2 bg-gray-600 text-white" onclick={() => (settings = !settings)}>
 				<Icon icon="mdi:gear" />
 			</button>
 		</div>

@@ -27,8 +27,8 @@ const api = {
 		getExisting: () => ipcRenderer.invoke('limbo:existing')
 	},
 	monitor: {
-		run: (args: { data: { inPath: string; outPath: string }[]; headless: boolean }) =>
-			ipcRenderer.send('monitor:run', args),
+		run: (args: { data: { inPath: string; outPath: string }; headless: boolean }) =>
+			ipcRenderer.invoke('monitor:run', args),
 		shippers: () => ipcRenderer.invoke('monitor:shippers')
 	},
 	scorecard: {
@@ -37,7 +37,8 @@ const api = {
 	},
 	shippers: {
 		run: (args: { name: string; accountNumbers: string | string[]; headless: boolean }) =>
-			ipcRenderer.invoke('shippers:run', args)
+			ipcRenderer.invoke('shippers:run', args),
+		aggregate: (args) => ipcRenderer.send('shippers:aggregate', args)
 	},
 	config: {
 		read: () => ipcRenderer.invoke('config:read'),

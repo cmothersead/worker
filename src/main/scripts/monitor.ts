@@ -113,6 +113,9 @@ export async function monitorShipper(inPath: string, outPath: string, headless: 
 		}
 	});
 
+	const scannedCount = sortedRows.filter((row) => row[9] == 'INDHU').length;
+
 	await newWorkbook.xlsx.writeFile(outPath);
 	console.log('all done');
+	return { pieceCount: todaySheet.rowCount - 1, scannedCount };
 }

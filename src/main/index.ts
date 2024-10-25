@@ -8,7 +8,7 @@ import { scorecard } from './scripts/browser';
 import { monitorShipper } from './scripts/monitor';
 import { readFileSync, writeFileSync } from 'fs';
 import { getExistingLIMBO, limbo } from './scripts/limbo';
-import { shipper, shippers } from './scripts/shippers';
+import { aggregate, shipper, shippers } from './scripts/shippers';
 
 const { username, password } = readConfig();
 
@@ -90,8 +90,8 @@ function createWindow(): void {
 	ipcMain.handle('monitor:shippers', () => {
 		return readConfig().monitor;
 	});
-	ipcMain.on('monitor:run', async (_, { data, headless }) =>
-		data.map(({ inPath, outPath }) => monitorShipper(inPath, outPath, headless))
+	ipcMain.handle('monitor:run', async (_, { data, headless }) =>
+		monitorShipper(data.inPath, data.outPath, headless)
 	);
 	ipcMain.on('laneToLane:writeCONS', (_, flightCONS) => {
 		const cache = readCache();
@@ -109,9 +109,10 @@ function createWindow(): void {
 			})
 		);
 	});
-	ipcMain.handle('shippers:run', async (_, { name, accountNumbers, headless }) => {
-		return await shipper({ name, accountNumbers, headless });
+	ipcMain.handle('shippers:run', async (_, { name, accountNumbers, preAlert, headless }) => {
+		return await shipper({ name, accountNumbers, preAlert, headless });
 	});
+	ipcMain.on('shippers:aggregate', async (_, args) => aggregate(args));
 	ipcMain.handle('config:read', () => readConfig());
 	ipcMain.on('config:update', (_, updateObject) => {
 		const config = readConfig();

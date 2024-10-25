@@ -29,14 +29,23 @@ export declare global {
 				getExisting: () => Promise<any>;
 			};
 			monitor: {
-				run;
+				run: (args: {
+					data: { inPath: string; outPath: string };
+					headless: boolean;
+				}) => Promise<{ pieceCount: number; scannedCount: number }>;
 				shippers;
 			};
 			scorecard: {
 				run;
 			};
 			shippers: {
-				run;
+				run: (args: {
+					name: string;
+					accountNumbers: string | string[];
+					preAlert: boolean;
+					headless: boolean;
+				}) => Promise<number>;
+				aggregate: (args: { name: string; preAlert: boolean }[]) => void;
 			};
 			config: {
 				read: () => Promise<any>;

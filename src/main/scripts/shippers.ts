@@ -5,28 +5,58 @@ import { readFileSync } from 'fs';
 import Excel from 'exceljs';
 import _ from 'lodash';
 
+const rampConversionPath = 'C:/Users/5260673/OneDrive - MyFedEx/SAA/New Ramp Conversion.xlsx';
+const managerConversionPath = 'C:/Users/5260673/OneDrive - MyFedEx/SAA/Flight-Manager.xlsx';
+const criticalDirPath = 'C:/Users/5260673/OneDrive - MyFedEx/SAA/Critical Shippers';
+const preAlertDirPath = 'C:/Users/5260673/OneDrive - MyFedEx/SAA/- Pre-Alerts';
+
+async function getRampLookup() {
+	const rampConversionWorkbook = new Excel.Workbook();
+	await rampConversionWorkbook.xlsx.readFile(rampConversionPath);
+	const rampConversionSheet = rampConversionWorkbook.getWorksheet('Data Sheet');
+	if (rampConversionSheet === undefined) throw new Error('Conversion sheet not found');
+	const stations = rampConversionSheet
+		.getColumn(1)
+		.values.filter((value) => value != undefined)
+		.map((station) => station.toString());
+	const ramps = rampConversionSheet.getColumn(2).values;
+	return _.zipObject(stations, ramps);
+}
+
+async function getManagerLookup() {
+	const managerConversionWorkbook = new Excel.Workbook();
+	await managerConversionWorkbook.xlsx.readFile(managerConversionPath);
+	const managerConversionSheet = managerConversionWorkbook.getWorksheet('Outbound Flts');
+	if (managerConversionSheet === undefined) throw new Error('Conversion sheet not found');
+	const headerValues = managerConversionSheet.getRow(1).values;
+	const lookupData = managerConversionSheet.getRows(2, managerConversionSheet.rowCount - 1);
+	if (lookupData === undefined) throw new Error('No lookup data found');
+	const lookupObjects = lookupData.map((row) =>
+		_.zipObject(headerValues.slice(1), row.values.slice(1))
+	);
+	return _.zipObject(
+		lookupObjects.map((obj) => obj['Destination']),
+		lookupObjects
+	);
+}
+
 export async function shipper({
 	name,
 	accountNumbers,
+	preAlert,
 	headless
 }: {
 	name: string;
 	accountNumbers: string | string[];
+	preAlert: boolean;
 	headless: boolean;
 }) {
 	const today = getToday();
 	const todayString = `${today.toLocaleDateString('en-us', { month: '2-digit' })}${today.toLocaleDateString('en-us', { day: '2-digit' })}`;
 	const data = await getShipperData(accountNumbers, headless);
-	const outputPath = `C:/Users/5260673/OneDrive - MyFedEx/SAA/Critical Shippers/${name}.xlsx`;
+	const outputPath = `${preAlert ? preAlertDirPath : criticalDirPath}/${name}.xlsx`;
 
-	const rampConversionWorkbook = new Excel.Workbook();
-	await rampConversionWorkbook.xlsx.readFile(
-		'C:/Users/5260673/OneDrive - MyFedEx/SAA/New Ramp Conversion.xlsx'
-	);
-	const rampConversionDataSheet = rampConversionWorkbook.getWorksheet('Data Sheet');
-	const stations = rampConversionDataSheet?.getColumn(1).values;
-	const ramps = rampConversionDataSheet?.getColumn(2).values;
-	const lookup = _.fromPairs(_.zip(stations, ramps));
+	const lookup = await getRampLookup();
 
 	const formattedData = data.map((row) =>
 		row
@@ -160,4 +190,56 @@ export async function getShipperData(accountNumbers: string | string[], headless
 	await browser.close();
 	data[0][0] = 'Tracking Number';
 	return data;
+}
+
+export async function aggregate(shippers: { name: string; preAlert: boolean }[]) {
+	const today = getToday();
+	const dateString = `${today.toLocaleDateString('en-us', { month: '2-digit' })}${today.toLocaleDateString('en-us', { day: '2-digit' })}`;
+
+	const dataPromise = shippers.map(async (shipper) => {
+		const inputPath = `${shipper.preAlert ? preAlertDirPath : criticalDirPath}/${shipper.name}.xlsx`;
+		const workbook = new Excel.Workbook();
+		await workbook.xlsx.readFile(inputPath);
+
+		const dateSheetName = workbook.worksheets.find(({ name }) => name.trim() === dateString)?.name;
+		if (!dateSheetName) {
+			console.log(`Date sheet not found in ${shipper.name}`);
+			return [];
+		}
+		const dateSheet = workbook.getWorksheet(dateSheetName);
+		return dateSheet
+			?.getRows(2, dateSheet.rowCount - 1)
+			?.map((row) => row.values)
+			.map((row) => ({ trackingNumber: row[1], station: row[3], shipper: shipper.name }))
+			.filter(({ trackingNumber }) => trackingNumber != undefined);
+	});
+	const data = await Promise.all(dataPromise);
+	const rampLookup = await getRampLookup();
+	const outboundLookup = await getManagerLookup();
+
+	const outWorkbook = new Excel.Workbook();
+	const sheet = outWorkbook.addWorksheet(dateString);
+	if (sheet === undefined) {
+		console.error('Sheet not created');
+		return;
+	}
+	sheet.addRow(['Tracking Number', 'Dest Station', 'Dest Ramp', 'Shipper', 'Outbound']);
+	sheet.addRows(
+		data.flatMap((shipments) =>
+			shipments?.map(({ trackingNumber, station, shipper }) => {
+				const ramp = rampLookup[station];
+				const outboundObject =
+					ramp != undefined ? outboundLookup[ramp.toString().slice(0, 3)] : undefined;
+				const outbound = outboundObject != undefined ? outboundObject['Outbound'] : undefined;
+				return [, trackingNumber, station, ramp, shipper, outbound];
+			})
+		)
+	);
+	const trackingNumberColumn = sheet.getColumn(1);
+	trackingNumberColumn.numFmt = '0';
+	trackingNumberColumn.width = 15.43;
+	await outWorkbook.xlsx.writeFile(
+		`C:/Users/5260673/OneDrive - MyFedEx/SAA/CST Beginning of Night/Shipments by Outbound - ${dateString}.xlsx`
+	);
+	console.log('done');
 }

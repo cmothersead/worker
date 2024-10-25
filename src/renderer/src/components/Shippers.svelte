@@ -94,6 +94,31 @@
 				'136496182, 137546299, 138390233, 163910950, 241045994, 356651464, 356660986, 356662920, 360097340, 364743025, 400360448, 535871906, 599848002, 693429277, 726468648, 872896430'
 		}
 	];
+	const prealerts = [
+		{ name: 'ALS', accountNumbers: '619185374' },
+		{ name: 'Cardinal Pfizer', accountNumbers: '694883273, 157044834' },
+		{
+			name: 'Eversana',
+			accountNumbers: '313135500, 805976551, 268905510',
+			payorNumbers: '313135500'
+		},
+		{ name: 'Maxcess - Roto Die', accountNumbers: '063000531, 119598729' },
+		{ name: 'Mayesh Wholesale Florist', accountNumbers: '637002457' },
+		{ name: 'Navy SW', accountNumbers: '020025255' },
+		{ name: 'North Coast Seafood', accountNumbers: '120739085' },
+		{ name: 'Pfizer', accountNumbers: '962381952, 793903413, 764918878, 533552480, 201867628' },
+		{ name: 'PPD', accountNumbers: '636888249, 116486636' },
+		{ name: 'Seafood.com', accountNumbers: '252801235, 560266146' }
+	];
+
+	const cstShippers = [
+		'ALS',
+		'Eureka',
+		'Maxcess - Roto Die',
+		'North Coast Seafood',
+		'Reptiles by Mack',
+		'Seafood.com'
+	];
 
 	let { headless = true } = $props();
 	let output = $state(
@@ -113,7 +138,12 @@
 			output = output.map((shipper) =>
 				shipper.name === name ? { ...shipper, status: 'loading' } : shipper
 			);
-			const count = await window.api.shippers.run({ name, accountNumbers, headless });
+			const count = await window.api.shippers.run({
+				name,
+				accountNumbers,
+				preAlert: false,
+				headless
+			});
 			output = output.map((shipper) =>
 				shipper.name === name ? { ...shipper, count, status: 'done' } : shipper
 			);
@@ -130,11 +160,21 @@
 		for (let i = simultaneousCount; i <= activeShippers.length; i++) {
 			const { name, accountNumbers } = activeShippers[i];
 			const index = await Promise.race(promises);
+			console.log(name);
 			promises.splice(index, 1, shipperPromise({ name, accountNumbers }, index));
 			console.log(promises.length);
 		}
 		await Promise.all(promises);
 		status = 'done';
+	}
+
+	async function cstReport() {
+		window.api.shippers.aggregate(
+			cstShippers.map((shipper) => ({
+				name: shipper,
+				preAlert: prealerts.some(({ name }) => shipper === name)
+			}))
+		);
 	}
 
 	let totalQuantity = $derived(
@@ -148,6 +188,7 @@
 	<h1 class="text-xl font-bold">Shippers</h1>
 	<div class="flex flex-col gap-1">
 		<button class="bg-green-500" onclick={shippers}>Let's Go!</button>
+		<button class="bg-blue-500" onclick={cstReport}>CST Report</button>
 		<div class="flex justify-between">
 			<span>{status}</span>
 			<span>{totalQuantity}</span>

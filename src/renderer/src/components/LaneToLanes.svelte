@@ -99,7 +99,6 @@
 		window.api.laneToLane.writeCONS(laneToLaneOutput?.map(({ number, cons }) => ({ number, cons })))
 	);
 	$effect(() => {
-		console.log('value updated');
 		window.api.config.update(
 			JSON.parse(
 				JSON.stringify({

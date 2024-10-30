@@ -210,7 +210,16 @@ export async function aggregate(shippers: { name: string; preAlert: boolean }[])
 		return dateSheet
 			?.getRows(2, dateSheet.rowCount - 1)
 			?.map((row) => row.values)
-			.map((row) => ({ trackingNumber: row[1], station: row[3], shipper: shipper.name }))
+			.map((row) => ({
+				trackingNumber: row[1],
+				station: row[3],
+				shipper:
+					shipper.name === 'Reptiles by Mack'
+						? row[16].toString().includes('06')
+							? 'Reptiles Ice'
+							: 'Reptiles Live'
+						: shipper.name
+			}))
 			.filter(({ trackingNumber }) => trackingNumber != undefined);
 	});
 	const data = await Promise.all(dataPromise);
@@ -218,13 +227,7 @@ export async function aggregate(shippers: { name: string; preAlert: boolean }[])
 	const outboundLookup = await getManagerLookup();
 
 	const outWorkbook = new Excel.Workbook();
-	const sheet = outWorkbook.addWorksheet(dateString);
-	if (sheet === undefined) {
-		console.error('Sheet not created');
-		return;
-	}
-	sheet.addRow(['Tracking Number', 'Dest Station', 'Dest Ramp', 'Shipper', 'Outbound']);
-	sheet.addRows(
+	const outputs = _.groupBy(
 		data.flatMap((shipments) =>
 			shipments?.map(({ trackingNumber, station, shipper }) => {
 				const ramp = rampLookup[station];
@@ -233,11 +236,30 @@ export async function aggregate(shippers: { name: string; preAlert: boolean }[])
 				const outbound = outboundObject != undefined ? outboundObject['Outbound'] : undefined;
 				return [, trackingNumber, station, ramp, shipper, outbound];
 			})
-		)
+		),
+		(val) => val[5] ?? ''
 	);
-	const trackingNumberColumn = sheet.getColumn(1);
-	trackingNumberColumn.numFmt = '0';
-	trackingNumberColumn.width = 15.43;
+	await Promise.all(
+		Object.keys(outputs)
+			.filter((val) => val != '')
+			.map(async (key) => {
+				const sheet = outWorkbook.addWorksheet(key, {
+					headerFooter: { oddHeader: '&L&D&C&A&RPage &P of &N' }
+				});
+				if (sheet === undefined) {
+					console.error('Sheet not created');
+					return;
+				}
+				sheet.addRow(['Tracking Number', 'Dest Station', 'Dest Ramp', 'Shipper']);
+				sheet.addRows(outputs[key].map((row) => row?.slice(0, 5)));
+				const trackingNumberColumn = sheet.getColumn(1);
+				trackingNumberColumn.numFmt = '0';
+				trackingNumberColumn.width = 16;
+				sheet.getColumn(2).width = 12;
+				sheet.getColumn(3).width = 11;
+				sheet.getColumn(4).width = 19;
+			})
+	);
 	await outWorkbook.xlsx.writeFile(
 		`C:/Users/5260673/OneDrive - MyFedEx/SAA/CST Beginning of Night/Shipments by Outbound - ${dateString}.xlsx`
 	);

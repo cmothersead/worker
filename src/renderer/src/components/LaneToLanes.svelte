@@ -223,7 +223,7 @@
 								</span>
 								<button
 									class:hidden={flight.status != 'none' || flight.cons == undefined}
-									class="group-hover:block cursor-pointer"
+									class="block group-hover:block cursor-pointer"
 									onclick={() => laneToLane(flight.number)}
 								>
 									<Icon icon={statusIcons['refresh']} class="text-xl text-gray-600" />

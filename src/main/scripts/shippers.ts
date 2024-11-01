@@ -7,8 +7,8 @@ import _ from 'lodash';
 
 const rampConversionPath = 'C:/Users/5260673/OneDrive - MyFedEx/SAA/New Ramp Conversion.xlsx';
 const managerConversionPath = 'C:/Users/5260673/OneDrive - MyFedEx/SAA/Flight-Manager.xlsx';
-const criticalDirPath = 'C:/Users/5260673/OneDrive - MyFedEx/SAA/Critical Shippers';
-const preAlertDirPath = 'C:/Users/5260673/OneDrive - MyFedEx/SAA/- Pre-Alerts';
+const criticalDirPath = 'C:/Users/5260673/OneDrive - MyFedEx/Critical Shippers';
+const preAlertDirPath = 'C:/Users/5260673/OneDrive - MyFedEx/Pre Alerts';
 
 async function getRampLookup() {
 	const rampConversionWorkbook = new Excel.Workbook();
@@ -28,14 +28,17 @@ async function getManagerLookup() {
 	await managerConversionWorkbook.xlsx.readFile(managerConversionPath);
 	const managerConversionSheet = managerConversionWorkbook.getWorksheet('Outbound Flts');
 	if (managerConversionSheet === undefined) throw new Error('Conversion sheet not found');
-	const headerValues = managerConversionSheet.getRow(1).values;
+	const headerValues = managerConversionSheet.getRow(1).values as Excel.CellValue[];
 	const lookupData = managerConversionSheet.getRows(2, managerConversionSheet.rowCount - 1);
 	if (lookupData === undefined) throw new Error('No lookup data found');
 	const lookupObjects = lookupData.map((row) =>
-		_.zipObject(headerValues.slice(1), row.values.slice(1))
+		_.zipObject(
+			headerValues.map((val) => val?.toString() ?? 'undefined').slice(1),
+			(row.values as Excel.CellValue[]).slice(1)
+		)
 	);
 	return _.zipObject(
-		lookupObjects.map((obj) => obj['Destination']),
+		lookupObjects.map((obj) => obj['Destination']?.toString() ?? ''),
 		lookupObjects
 	);
 }
@@ -62,7 +65,7 @@ export async function shipper({
 		row
 			.map((value) => (Number.isSafeInteger(parseInt(value)) ? parseInt(value) : value))
 			.toSpliced(1, 1, row[1].slice(0, 2), row[1].slice(2))
-			.toSpliced(3, 0, lookup[row[1].slice(2)])
+			.toSpliced(3, 0, lookup[row[1].slice(2)]?.toString() ?? 'undefined')
 	);
 	formattedData[0][3] = 'Ramp';
 
@@ -237,7 +240,7 @@ export async function aggregate(shippers: { name: string; preAlert: boolean }[])
 				return [, trackingNumber, station, ramp, shipper, outbound];
 			})
 		),
-		(val) => val[5] ?? ''
+		(val) => val?.at(5) ?? ''
 	);
 	await Promise.all(
 		Object.keys(outputs)

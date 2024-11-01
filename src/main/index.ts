@@ -8,7 +8,7 @@ import { scorecard } from './scripts/browser';
 import { monitorShipper } from './scripts/monitor';
 import { readFileSync, writeFileSync } from 'fs';
 import { getExistingLIMBO, limbo } from './scripts/limbo';
-import { aggregate, shipper, shippers } from './scripts/shippers';
+import { aggregate, shipper } from './scripts/shippers';
 
 const { username, password } = readConfig();
 
@@ -93,18 +93,15 @@ function createWindow(): void {
 	ipcMain.handle('monitor:run', async (_, { data, headless }) =>
 		monitorShipper(data.inPath, data.outPath, headless)
 	);
-	ipcMain.on('laneToLane:writeCONS', (_, flightCONS) => {
+	ipcMain.handle('cache:read', () => readCache());
+	ipcMain.on('cache:update', (_, update) => {
 		const cache = readCache();
 		const today = getToday().toDateString();
 		writeCache(
 			JSON.stringify({
 				[today]: {
 					...cache[today],
-					...Object.fromEntries(
-						flightCONS
-							?.filter(({ cons }) => cons != undefined)
-							.map(({ number, cons }) => [number, cons])
-					)
+					...update
 				}
 			})
 		);

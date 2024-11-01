@@ -1,4 +1,4 @@
-import Excel, { FillPattern } from 'exceljs';
+import Excel, { type FillPattern } from 'exceljs';
 import { getToday } from '.';
 import { dreuiReport } from './browser';
 import { monitorConfig } from './dreuiConfigs';
@@ -12,16 +12,16 @@ export async function monitorShipper(inPath: string, outPath: string, headless: 
 	const oldWorkbook = new Excel.Workbook();
 	await oldWorkbook.xlsx.readFile(inPath);
 
-	var todaySheet = newWorkbook.getWorksheet(todayString);
+	var todaySheet = newWorkbook.getWorksheet(todayString) as Excel.Worksheet & { orderNo: number };
 
 	if (todaySheet === undefined) {
-		todaySheet = newWorkbook.addWorksheet(todayString);
+		todaySheet = newWorkbook.addWorksheet(todayString) as Excel.Worksheet & { orderNo: number };
 
 		newWorkbook.worksheets
 			.map(({ name }) => name)
 			.sort((a, b) => b.localeCompare(a))
 			.forEach((name, index) => {
-				const sheet = newWorkbook.getWorksheet(name);
+				const sheet = newWorkbook.getWorksheet(name) as Excel.Worksheet & { orderNo: number };
 				if (sheet == undefined) return;
 				sheet.orderNo = index + 1;
 			});
@@ -70,7 +70,7 @@ export async function monitorShipper(inPath: string, outPath: string, headless: 
 		}
 	};
 	const trackingNumberColumn = todaySheet.getColumn(1);
-	const trackingNumbers = trackingNumberColumn.values.slice(2);
+	const trackingNumbers = trackingNumberColumn.values.slice(2) as number[];
 	const results = await dreuiReport(monitorConfig, trackingNumbers, headless);
 	console.log('dreui done');
 	todaySheet.eachRow((row, index) => {
@@ -80,7 +80,11 @@ export async function monitorShipper(inPath: string, outPath: string, headless: 
 			.map((value) => (value == '' ? null : value));
 		if (Number.isSafeInteger(parseInt(result[0]))) result[0] = parseInt(result[0]);
 		if (Number.isSafeInteger(parseInt(result[3]))) result[3] = parseInt(result[3]);
-		row.values = [...row.values.slice(1, 5), ...result, ...row.values.slice(13)];
+		row.values = [
+			...(row.values as Excel.CellValue[]).slice(1, 5),
+			...result,
+			...(row.values as Excel.CellValue[]).slice(13)
+		];
 	});
 
 	const sortedRows = todaySheet
@@ -99,9 +103,9 @@ export async function monitorShipper(inPath: string, outPath: string, headless: 
 						: b[9] === undefined
 							? 1
 							: a[9].toString().localeCompare(b[9].toString())
-		);
+		) as Excel.CellValue[][] | undefined;
 
-	if (sortedRows === undefined) return;
+	if (sortedRows === undefined) return {};
 
 	todaySheet.spliceRows(1, todaySheet.rowCount + 1, ...sortedRows);
 

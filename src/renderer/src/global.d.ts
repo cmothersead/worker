@@ -18,7 +18,6 @@ export declare global {
 				}) => Promise<any>;
 				cons: (args: { flightNumber: number; headless: boolean }) => Promise<number>;
 				open: (path: string) => void;
-				writeCONS: (flightCONS: { number: number; cons: string }) => void;
 			};
 			limbo: {
 				run: (args: { date: Date; untilIndex: number; headless: boolean }) => Promise<{
@@ -47,9 +46,13 @@ export declare global {
 				}) => Promise<number>;
 				aggregate: (args: { name: string; preAlert: boolean }[]) => void;
 			};
+			cache: {
+				read: () => Promise<any>;
+				update: (updateObject) => void;
+			};
 			config: {
 				read: () => Promise<any>;
-				update: (updateObject: any) => void;
+				update: (updateObject) => void;
 			};
 			dialog: {
 				folder: () => Promise<string>;

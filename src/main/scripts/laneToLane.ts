@@ -1,7 +1,6 @@
 import { copyFileSync, existsSync, mkdirSync, readdirSync, readFileSync, unlinkSync } from 'fs';
 import AdmZip from 'adm-zip';
-// import Excel from 'exceljs';
-import { chromium, Page } from 'playwright';
+import { chromium, type Page } from 'playwright';
 import { BrowserWindow } from 'electron';
 import { getToday, getYesterday } from '.';
 
@@ -206,17 +205,17 @@ async function lookupConsFromFlight({
 	await startDateSelect.selectOption(todayString);
 	await endDateSelect.selectOption(todayString);
 
-	let consNumber = undefined;
+	let consNumber: string | undefined = undefined;
 	while (consNumber == undefined) {
 		await searchButton.click();
 
 		await flightNumberColumn.first().waitFor();
 		const flightNumberValues = await flightNumberColumn.evaluateAll((elements) =>
-			elements.map((element) => element.innerText)
+			elements.map((element) => (element as HTMLElement).innerText)
 		);
 		const index = flightNumberValues.findIndex((value) => value == flightNumber);
 		const consNumberValues = await consNumberColumn.evaluateAll((elements) =>
-			elements.map((element) => element.innerText)
+			elements.map((element) => (element as HTMLElement).innerText)
 		);
 		consNumber = consNumberValues[index];
 	}
@@ -264,7 +263,7 @@ async function downloadReportData({
 					const reportError = page.getByText('An error has occurred. Please try again.');
 					await dropdown.selectOption('ursalane');
 					await selectReportButton.click();
-					await consNumbersField.fill(consNumber);
+					await consNumbersField.fill(consNumber.toString());
 					await nestedCheckbox.click();
 					await queryReportButton.click();
 					await page.bringToFront();

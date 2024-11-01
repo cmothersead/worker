@@ -1,4 +1,4 @@
-import { contextBridge, dialog, ipcRenderer } from 'electron';
+import { contextBridge, ipcRenderer } from 'electron';
 import { electronAPI } from '@electron-toolkit/preload';
 
 // Custom APIs for renderer
@@ -16,8 +16,7 @@ const api = {
 			ipcRenderer.invoke('laneToLane:existing', args),
 		cons: (args: { flightNumber: number; headless: boolean }) =>
 			ipcRenderer.invoke('laneToLane:cons', args),
-		open: (path: string) => ipcRenderer.send('laneToLane:open', path),
-		writeCONS: (consNumbers: number[]) => ipcRenderer.send('laneToLane:writeCONS', consNumbers)
+		open: (path: string) => ipcRenderer.send('laneToLane:open', path)
 	},
 	limbo: {
 		run: (args: { date: Date; untilIndex: number; headless: boolean }) =>
@@ -39,6 +38,10 @@ const api = {
 		run: (args: { name: string; accountNumbers: string | string[]; headless: boolean }) =>
 			ipcRenderer.invoke('shippers:run', args),
 		aggregate: (args) => ipcRenderer.send('shippers:aggregate', args)
+	},
+	cache: {
+		read: () => ipcRenderer.invoke('cache:read'),
+		update: (updateObject) => ipcRenderer.send('cache:update', updateObject)
 	},
 	config: {
 		read: () => ipcRenderer.invoke('config:read'),

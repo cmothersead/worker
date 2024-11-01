@@ -1,5 +1,5 @@
 import { copyFileSync, existsSync, mkdirSync, readFileSync } from 'fs';
-import { chromium, Page } from 'playwright';
+import { chromium, type Page } from 'playwright';
 import _ from 'lodash';
 import Excel from 'exceljs';
 import { dreuiReport } from './browser';
@@ -178,7 +178,7 @@ export async function limbo({
 
 	const researchOutput = await dreuiReport(
 		limboConfig,
-		objects.map((item) => item['Tracking Number'])
+		objects.map((item) => parseInt(item['Tracking Number']))
 	);
 	console.log('LIMBO research downloaded.');
 	researchOutput[0][0] = 'Tracking Number';
@@ -316,14 +316,16 @@ export async function getExistingLIMBO() {
 	if (!existsSync(shareFilePath)) return undefined;
 	await workbook.xlsx.readFile(shareFilePath);
 	const originSheet = workbook.getWorksheet('Origin');
+	if (originSheet === undefined) throw new Error('Origin sheet not found');
 	const topOrigin = {
-		code: originSheet?.getRow(3).values?.at(1),
-		quantity: originSheet?.getRow(3).values?.at(-1)
+		code: (originSheet.getRow(3).values as Excel.CellValue[]).at(1),
+		quantity: (originSheet.getRow(3).values as Excel.CellValue[]).at(-1)
 	};
 	const destinationSheet = workbook.getWorksheet('Destination');
+	if (destinationSheet === undefined) throw new Error('Destination sheet not found');
 	const topDestination = {
-		code: destinationSheet?.getRow(3).values?.at(1),
-		quantity: destinationSheet?.getRow(3).values?.at(-1)
+		code: (destinationSheet.getRow(3).values as Excel.CellValue[]).at(1),
+		quantity: (destinationSheet.getRow(3).values as Excel.CellValue[]).at(-1)
 	};
 	return { topOrigin, topDestination };
 }

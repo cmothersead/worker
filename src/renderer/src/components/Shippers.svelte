@@ -184,24 +184,27 @@
 	let checkAll = $state(true);
 </script>
 
-<div class="bg-slate-400 p-4 rounded-lg">
+<div class="bg-slate-400 p-4 rounded-lg flex flex-col overflow-hidden">
 	<h1 class="text-xl font-bold">Shippers</h1>
-	<div class="flex flex-col gap-1">
+	<div class="flex flex-col gap-1 overflow-hidden">
 		<button class="bg-green-500" onclick={shippers}>Let's Go!</button>
 		<button class="bg-blue-500" onclick={cstReport}>CST Report</button>
 		<div class="flex justify-between">
 			<span>{status}</span>
 			<span>{totalQuantity}</span>
 		</div>
-		<input
-			type="checkbox"
-			checked={checkAll}
-			onclick={() => {
-				checkAll = !checkAll;
-				output = output.map((shipper) => ({ ...shipper, checked: checkAll }));
-			}}
-		/>
-		<div class="flex flex-col gap-1">
+		<div class="flex items-center ps-4 gap-2">
+			<input
+				type="checkbox"
+				checked={checkAll}
+				onclick={() => {
+					checkAll = !checkAll;
+					output = output.map((shipper) => ({ ...shipper, checked: checkAll }));
+				}}
+			/>
+			<span class="text-sm font-bold"> Select/Unselect All </span>
+		</div>
+		<div class="flex flex-col gap-1 pe-2 overflow-y-auto">
 			{#each output as shipper}
 				<div class="bg-slate-100 py-1 px-4 rounded">
 					<div class="flex justify-between gap-4">

@@ -1,7 +1,7 @@
 import { chromium } from 'playwright';
 import { mkdirSync, existsSync, readFileSync, copyFileSync, writeFileSync } from 'fs';
 import AdmZip from 'adm-zip';
-import _, { head } from 'lodash';
+import _ from 'lodash';
 import { parse } from 'csv-parse/sync';
 import { commCommentAllConfig, limboConfig, scorecardConfig } from './dreuiConfigs.js';
 import { BrowserWindow } from 'electron';
@@ -119,9 +119,9 @@ export async function limboProcess(browser, customDate, window: BrowserWindow) {
 		})
 	);
 	// console.log(originOutput);
-	console.log(`Top Origin: ${originOutput[2].at(0).value} - ${originOutput[2].at(-1).value}`);
+	console.log(`Top Origin: ${originOutput[2].at(0)?.value} - ${originOutput[2].at(-1)?.value}`);
 	window.webContents.send('limbo:update', {
-		topOrigin: { code: originOutput[2].at(0).value, quantity: originOutput[2].at(-1).value }
+		topOrigin: { code: originOutput[2].at(0)?.value, quantity: originOutput[2].at(-1)?.value }
 	});
 	const topOrigin = originOutput[2][0].value;
 
@@ -166,9 +166,9 @@ export async function limboProcess(browser, customDate, window: BrowserWindow) {
 			};
 		})
 	);
-	console.log(`Top Destination: ${destOutput[2].at(0).value} - ${destOutput[2].at(-1).value}`);
+	console.log(`Top Destination: ${destOutput[2].at(0)?.value} - ${destOutput[2].at(-1)?.value}`);
 	window.webContents.send('limbo:update', {
-		topDestination: { code: destOutput[2].at(0).value, quantity: destOutput[2].at(-1).value }
+		topDestination: { code: destOutput[2].at(0)?.value, quantity: destOutput[2].at(-1)?.value }
 	});
 	const topDest = destOutput[2][0].value;
 
@@ -338,7 +338,7 @@ export async function limboProcess(browser, customDate, window: BrowserWindow) {
 
 	const researchOutput = await dreuiReport(
 		limboConfig,
-		objects.map((item) => item['Tracking Number'])
+		objects.map((item) => parseInt(item['Tracking Number']))
 	);
 	console.log('LIMBO research downloaded.');
 	researchOutput[0][0] = 'Tracking Number';
@@ -473,7 +473,7 @@ export async function scorecard({
 			(line, index) => data.findIndex((find) => find[0] == line[0]) == index
 		);
 		console.log(dataNoDuplicates.length);
-		return dataNoDuplicates;
+		return dataNoDuplicates as string[][];
 	};
 	const getCommData = async () => {
 		const commData = await dreuiReport(commCommentAllConfig, trackingNumbers, headless);
@@ -482,7 +482,7 @@ export async function scorecard({
 			(line, index) => commData.findIndex((find) => find[0] == line[0]) == index
 		);
 		console.log(commDataNoDuplicates.length);
-		return commDataNoDuplicates;
+		return commDataNoDuplicates as string[][];
 	};
 
 	const [data, commData] = await Promise.all([getData(), getCommData()]);
@@ -558,7 +558,10 @@ export async function dreuiSession(config, trackingNumbers: number[], headless: 
 	if (locFilter) await applyLocationFilters(locFilter);
 
 	await accordionHeader.click();
-	await tinList.evaluate((list, value) => (list.value = value), trackingNumbers.join('\n'));
+	await tinList.evaluate(
+		(list, value) => ((list as HTMLInputElement).value = value),
+		trackingNumbers.join('\n')
+	);
 	await tinList.type('\n');
 
 	await executeButton.click();

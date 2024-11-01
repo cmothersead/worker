@@ -1,6 +1,7 @@
 <script lang="ts">
 	import Icon from '@iconify/svelte';
 	import { statusIcons } from '.';
+	import SettingsButton from './SettingsButton.svelte';
 
 	let { headless = true } = $props();
 	let status: 'none' | 'loading' | 'done' | 'error' = $state('none');
@@ -11,6 +12,7 @@
 		topOrigin?: { code: string; quantity: number };
 		topDestination?: { code: string; quantity: number };
 	} = $state({});
+	let automatic = $state(true);
 
 	const latestValues = [
 		{ value: 'B4 22:00', display: '22:00' },
@@ -51,22 +53,19 @@
 	configure();
 </script>
 
-<div class="bg-slate-400 p-4 rounded-lg">
-	<h1 class="text-xl font-bold">LIMBO</h1>
-	<div class="flex justify-between">
-		<button class="rounded px-2 bg-green-400" onclick={limbo}>Start</button>
-		{#if settings}
-			<button class="rounded px-2 bg-gray-600 text-white" onclick={() => (settings = !settings)}>
-				Save
-			</button>
-		{:else}
-			<button class="rounded px-2 bg-gray-600 text-white" onclick={() => (settings = !settings)}>
-				<Icon icon="mdi:gear" />
-			</button>
-		{/if}
+<div class="bg-slate-400 flex flex-col gap-2 p-4 rounded-lg">
+	<div class="flex justify-between items-center">
+		<h1 class="text-xl font-bold">LIMBO</h1>
+		<SettingsButton bind:settings />
+	</div>
+	<div class="flex items-center gap-2">
+		<button class="rounded px-2 bg-green-400 flex-grow" onclick={limbo}>Start</button>
+		<label class="flex items-center gap-1 text-sm font-bold"
+			>Automatic <input type="checkbox" bind:checked={automatic} /></label
+		>
 	</div>
 	{#if settings}
-		Settings!
+		Settings
 		<div>
 			<div>
 				<span class="font-bold">Include Freight Until:</span>

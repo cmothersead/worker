@@ -2,6 +2,10 @@
 	import Icon from '@iconify/svelte';
 	import { statusIcons } from '.';
 	import SettingsButton from './SettingsButton.svelte';
+	import { onMount } from 'svelte';
+	import { getToday } from '../../../main/scripts';
+
+	const today = getToday();
 
 	let { headless = true } = $props();
 	let status: 'none' | 'loading' | 'done' | 'error' = $state('none');
@@ -43,6 +47,9 @@
 		if (output?.topOrigin?.code != undefined) {
 			status = 'done';
 		}
+		if (automatic && status != 'done' && today.getDay() != 1) {
+			limbo();
+		}
 	}
 
 	$effect(() => {
@@ -50,7 +57,7 @@
 			window.api.config.update({ limbo: { untilIndex: latestIndex } });
 	});
 
-	configure();
+	onMount(configure);
 </script>
 
 <div class="bg-slate-400 flex flex-col gap-2 p-4 rounded-lg">
@@ -61,7 +68,15 @@
 	<div class="flex items-center gap-2">
 		<button class="rounded px-2 bg-green-400 flex-grow" onclick={limbo}>Start</button>
 		<label class="flex items-center gap-1 text-sm font-bold"
-			>Automatic <input type="checkbox" bind:checked={automatic} /></label
+			>Automatic <input
+				type="checkbox"
+				bind:checked={automatic}
+				onclick={() => {
+					if (automatic && status != 'done' && today.getDay() != 1) {
+						limbo();
+					}
+				}}
+			/></label
 		>
 	</div>
 	{#if settings}

@@ -1,12 +1,14 @@
-import { copyFileSync, existsSync, mkdirSync, readFileSync } from 'fs';
+import { copyFileSync, existsSync, mkdirSync, readdirSync, readFileSync, unlinkSync } from 'fs';
 import { chromium, type Page } from 'playwright';
 import _ from 'lodash';
 import Excel from 'exceljs';
 import { dreuiReport } from './browser';
 import { limboConfig } from './dreuiConfigs';
-import { getToday } from '.';
+import { getToday, getYesterday } from '.';
 
 const blankTemplate = 'C:/Users/5260673/ONeDrive - MyFedEx/Documents/blank.xlsx';
+const limboOutputDirPath = 'C:/Users/5260673/ONeDrive - MyFedEx/Communication/Reports/LIMBO';
+const limboArchiveDirPath = 'C:/Users/5260673/ONeDrive - MyFedEx/SAA/LIMBO';
 
 async function waitForLoad(page: Page) {
 	const loader = page.locator('svg[class="sf-svg-loader-12x12"]');
@@ -269,24 +271,18 @@ export async function limbo({
 		}
 	});
 
-	const monthDirPath = `C:/Users/5260673/OneDrive - MyFedEx/SAA/LIMBO/LIMBO ${today.toLocaleDateString(
-		'en-us',
-		{
-			month: 'short',
-			year: 'numeric'
-		}
-	)}`;
+	const monthDirPath = `${limboArchiveDirPath}/LIMBO ${today.toLocaleDateString('en-us', {
+		month: 'short',
+		year: 'numeric'
+	})}`;
 	const archiveFilePath = `${monthDirPath}/LIMBO - ${today.toLocaleDateString('en-us', {
 		month: '2-digit'
 	})}${today.toLocaleDateString('en-us', {
 		day: '2-digit'
 	})}.xlsx`;
-	const shareFilePath = `C:/Users/5260673/OneDrive - MyFedEx/Communication/Reports/LIMBO/LIMBO - ${today.toLocaleDateString(
-		'en-us',
-		{
-			month: '2-digit'
-		}
-	)}${today.toLocaleDateString('en-us', {
+	const shareFilePath = `${limboOutputDirPath}/LIMBO - ${today.toLocaleDateString('en-us', {
+		month: '2-digit'
+	})}${today.toLocaleDateString('en-us', {
 		day: '2-digit'
 	})}.xlsx`;
 
@@ -294,11 +290,27 @@ export async function limbo({
 		mkdirSync(monthDirPath);
 	}
 	await blank.xlsx.writeFile(archiveFilePath);
+	deleteOldLIMBO();
 	copyFileSync(archiveFilePath, shareFilePath);
 	return {
 		topOrigin: { code: topOrigin, quantity: topOriginCount },
 		topDestination: { code: topDest, quantity: topDestCount }
 	};
+}
+
+export function deleteOldLIMBO() {
+	const yesterday = getYesterday();
+	const old = readdirSync(limboOutputDirPath).filter((fileName) =>
+		fileName.includes(
+			`${yesterday.toLocaleDateString('en-us', {
+				month: '2-digit'
+			})}${yesterday.toLocaleDateString('en-us', { day: '2-digit' })}`
+		)
+	);
+
+	for (const oldFile of old) {
+		unlinkSync(`${limboOutputDirPath}/${oldFile}`);
+	}
 }
 
 export async function getExistingLIMBO() {

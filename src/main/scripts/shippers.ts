@@ -7,8 +7,10 @@ import _ from 'lodash';
 
 const rampConversionPath = 'C:/Users/5260673/OneDrive - MyFedEx/SAA/New Ramp Conversion.xlsx';
 const managerConversionPath = 'C:/Users/5260673/OneDrive - MyFedEx/SAA/Flight-Manager.xlsx';
-const criticalDirPath = 'C:/Users/5260673/OneDrive - MyFedEx/Critical Shippers';
-const preAlertDirPath = 'C:/Users/5260673/OneDrive - MyFedEx/Pre Alerts';
+const criticalDirPath = 'C:/Users/5260673/OneDrive - MyFedEx/SAA/Critical Shippers';
+const preAlertDirPath = 'C:/Users/5260673/OneDrive - MyFedEx/SAA/- Pre-Alerts';
+const criticalDirDummyPath = 'C:/Users/5260673/OneDrive - MyFedEx/Critical Shippers';
+const preAlertDirDummyPath = 'C:/Users/5260673/OneDrive - MyFedEx/Pre Alerts';
 
 async function getRampLookup() {
 	const rampConversionWorkbook = new Excel.Workbook();
@@ -57,7 +59,7 @@ export async function shipper({
 	const today = getToday();
 	const todayString = `${today.toLocaleDateString('en-us', { month: '2-digit' })}${today.toLocaleDateString('en-us', { day: '2-digit' })}`;
 	const data = await getShipperData(accountNumbers, headless);
-	const outputPath = `${preAlert ? preAlertDirPath : criticalDirPath}/${name}.xlsx`;
+	const outputPath = `${preAlert ? preAlertDirDummyPath : criticalDirDummyPath}/${name}.xlsx`;
 
 	const lookup = await getRampLookup();
 
@@ -88,7 +90,7 @@ export async function shipper({
 	);
 
 	dateSheet.spliceRows(1, dateSheet.actualRowCount, ...formattedData);
-	// workbook.xlsx.writeFile(outputPath);
+	workbook.xlsx.writeFile(outputPath);
 	console.log(`${name} done`);
 	return formattedData.length - 1;
 }
@@ -195,6 +197,22 @@ export async function getShipperData(accountNumbers: string | string[], headless
 	return data;
 }
 
+export async function checkExisting(shipper: { name: string; preAlert: boolean }) {
+	const today = getToday();
+	const dateString = `${today.toLocaleDateString('en-us', { month: '2-digit' })}${today.toLocaleDateString('en-us', { day: '2-digit' })}`;
+
+	const inputPath = `${shipper.preAlert ? preAlertDirPath : criticalDirPath}/${shipper.name}.xlsx`;
+	const workbook = new Excel.Workbook();
+	await workbook.xlsx.readFile(inputPath);
+
+	const dateSheetName = workbook.worksheets.find(({ name }) => name.trim() === dateString)?.name;
+	if (!dateSheetName) {
+		console.log(`Date sheet not found in ${shipper.name}`);
+		return undefined;
+	}
+	return (workbook.getWorksheet(dateSheetName) as Excel.Worksheet).rowCount - 1;
+}
+
 export async function aggregate(shippers: { name: string; preAlert: boolean }[]) {
 	const today = getToday();
 	const dateString = `${today.toLocaleDateString('en-us', { month: '2-digit' })}${today.toLocaleDateString('en-us', { day: '2-digit' })}`;
@@ -254,7 +272,13 @@ export async function aggregate(shippers: { name: string; preAlert: boolean }[])
 					return;
 				}
 				sheet.addRow(['Tracking Number', 'Dest Station', 'Dest Ramp', 'Shipper']);
-				sheet.addRows(outputs[key].map((row) => row?.slice(0, 5)));
+				sheet.addRows(
+					outputs[key].filter((row) => row?.at(4) != 'Cardinal').map((row) => row?.slice(0, 5))
+				);
+				sheet.addRow([
+					'Cardinal Total:',
+					outputs[key].filter((row) => row?.at(4) === 'Cardinal').length
+				]);
 				const trackingNumberColumn = sheet.getColumn(1);
 				trackingNumberColumn.numFmt = '0';
 				trackingNumberColumn.width = 16;

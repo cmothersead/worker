@@ -45,6 +45,7 @@ export declare global {
 					headless: boolean;
 				}) => Promise<number>;
 				aggregate: (args: { name: string; preAlert: boolean }[]) => void;
+				existing: (args: { name: string; preAlert: boolean }) => Promise<number>;
 			};
 			cache: {
 				read: () => Promise<any>;

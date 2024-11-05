@@ -1,141 +1,23 @@
 <script lang="ts">
 	import Icon from '@iconify/svelte';
 	import { statusIcons } from '.';
-
-	const criticalShippers = [
-		{
-			name: 'Abbott',
-			accountNumbers:
-				'106499462, 110963963, 170911660, 187619858, 217485738, 237927915, 243482194, 256041782, 267310203, 315926726, 356652401, 415728344, 415729626, 459318488, 528032621, 675067236, 746597061, 746779488, 898384047'
-		},
-		{
-			name: 'Abbvie',
-			accountNumbers:
-				'106671001, 108631120, 178506587, 178508580, 222967589, 240860732, 241396371, 243043751, 286329586, 400021228'
-		},
-		{
-			name: 'Alliance',
-			accountNumbers:
-				'127418772, 129634545, 131172672, 143299236, 239196896, 315032938, 560377282, 925535818'
-		},
-		{
-			name: 'Cardinal',
-			accountNumbers:
-				'080222858, 157044834, 215679217, 223518303, 230922381, 254205680, 312495848, 312830043, 318210527, 510431863, 687235606, 694883273, 723066921, 806126810'
-		},
-		{ name: 'Community Tissue', accountNumbers: '222288916, 985296634, 985959951' },
-		{
-			name: 'Eureka',
-			accountNumbers: '174515514'
-		},
-		{
-			name: 'Express Scripts',
-			accountNumbers:
-				'206365340, 252355863, 252360867, 258625501, 260887785, 305426962, 356637143, 391701067, 447439883, 630075157, 846966463, 868544490'
-		},
-		{
-			name: 'GE Healthcare',
-			accountNumbers: '060663432, 007101058, 216438523, 210701095, 330929928, 694365876'
-		},
-		{
-			name: 'Johnson n Johnson',
-			accountNumbers:
-				'275729562, 307676508, 46600576, 338866364, 337098860, 80902158, 876174537, 091535866, 135078808, 264828546, 779068536, 102988205, 275759562'
-		},
-		{
-			name: 'Leiters',
-			accountNumbers: '659311852, 884275318'
-		},
-		{
-			name: 'LifeNet Health',
-			accountNumbers:
-				'622902265, 616818805, 619099745, 233979384, 867033742, 623486702, 378555299, 256771594, 610564224, 648978057, 411491820, 634035184, 786155444, 599586784, 314397525, 872348913, 915006248, 681866302, 192473527, 619184947, 110924780, 767030843, 626831133'
-		},
-		{ name: 'LuluLemon', accountNumbers: '944751971' },
-		{
-			name: 'McKesson',
-			accountNumbers: '353808788, 355701727, 359541198, 370160953, 410947188, 682488972'
-		},
-		{
-			name: 'MNX',
-			accountNumbers: '336817323, 814048209'
-		},
-		{ name: 'Mt Parnell', accountNumbers: '368944696' },
-		{
-			name: 'OptumRx',
-			accountNumbers:
-				'127339058, 134206292, 201878898, 238797942, 238809622, 243069432, 251733805, 285109825, 291063748, 292714920, 294509798, 306368540, 308927857, 310729558, 319090762, 320661943, 335423038, 341963800, 366154078, 373726460, 406276465, 428754166, 440521525, 491253681, 502842765, 517536202, 621677250, 621757350, 642261053, 642420674, 650841999, 684804391, 692692896, 692731492, 730300999, 762753960, 775343079, 795501835, 795542051, 805397357, 865124996, 865125038, 865125070, 873939451, 884923204, 911425793, 952971280'
-		},
-		{ name: 'Ozark', accountNumbers: '152777337, 230178356, 883642015' },
-		{ name: 'Quality Marine', accountNumbers: '128124802' },
-		{ name: 'Reptiles by Mack', accountNumbers: '445853364' },
-		{
-			name: 'Roche',
-			accountNumbers: '161353485, 046207840, 234032666, 197316624, 161557757, 128953809'
-		},
-		{
-			name: 'Stryker',
-			accountNumbers:
-				'173030746, 216005244, 229226380, 245115954, 256347814, 259098769, 285545730, 319316213, 319493514, 319747338, 319782796, 343081162, 345685847, 355712869, 650622731, 660987975, 911662639'
-		},
-		{
-			name: 'Tailored Brands',
-			accountNumbers: '320206570, 320206650, 799453126, 799454246, 799817829, 799906287, 800088461'
-		},
-		{ name: 'Takeda', accountNumbers: '943853738' },
-		{
-			name: 'ThermoLife',
-			accountNumbers: '014200215, 108993340, 230855951, 242598520, 298646196, 412575881'
-		},
-		{ name: 'VA CMOP', accountNumbers: '339344124' },
-		{
-			name: 'Vaxserve',
-			accountNumbers:
-				'136496182, 137546299, 138390233, 163910950, 241045994, 356651464, 356660986, 356662920, 360097340, 364743025, 400360448, 535871906, 599848002, 693429277, 726468648, 872896430'
-		}
-	];
-	const prealerts = [
-		{ name: 'ALS', accountNumbers: '619185374' },
-		{ name: 'Cardinal Pfizer', accountNumbers: '694883273, 157044834' },
-		{
-			name: 'Eversana',
-			accountNumbers: '313135500, 805976551, 268905510',
-			payorNumbers: '313135500'
-		},
-		{ name: 'Maxcess - Roto Die', accountNumbers: '063000531, 119598729' },
-		{ name: 'Mayesh Wholesale Florist', accountNumbers: '637002457' },
-		{ name: 'Navy SW', accountNumbers: '020025255' },
-		{ name: 'North Coast Seafood', accountNumbers: '120739085' },
-		{ name: 'Pfizer', accountNumbers: '962381952, 793903413, 764918878, 533552480, 201867628' },
-		{ name: 'PPD', accountNumbers: '636888249, 116486636' },
-		{ name: 'Seafood.com', accountNumbers: '252801235, 560266146' }
-	];
-
-	const cstShippers = [
-		'ALS',
-		'Eureka',
-		'Maxcess - Roto Die',
-		'North Coast Seafood',
-		'Reptiles by Mack',
-		'Seafood.com'
-	];
+	import { onMount } from 'svelte';
 
 	let { headless = true } = $props();
-	let output = $state(
-		criticalShippers.map((shipper) => ({
-			...shipper,
-			count: undefined,
-			status: 'none',
-			checked: true
-		}))
-	);
-	let status = $state('not started');
+	let config = $state(undefined);
+	let criticalShippers = $state([]);
+	let preAlerts = $state([]);
+	let cstShippers = $state([]);
+	let criticalOutput = $state([]);
+	let preAlertOutput = $state([]);
+	let tab = $state(0);
+	let input = $derived(tab === 0 ? criticalShippers : preAlerts);
+	let output = $derived(tab === 0 ? criticalOutput : preAlertOutput);
 
 	async function shippers() {
-		status = 'running';
 		const simultaneousCount = 5;
 		const shipperPromise = async ({ name, accountNumbers }, index: number) => {
-			output = output.map((shipper) =>
+			criticalOutput = criticalOutput.map((shipper) =>
 				shipper.name === name ? { ...shipper, status: 'loading' } : shipper
 			);
 			const count = await window.api.shippers.run({
@@ -144,13 +26,13 @@
 				preAlert: false,
 				headless
 			});
-			output = output.map((shipper) =>
+			criticalOutput = criticalOutput.map((shipper) =>
 				shipper.name === name ? { ...shipper, count, status: 'done' } : shipper
 			);
 			return index;
 		};
 
-		const activeShippers = output.filter(({ checked }) => checked === true);
+		const activeShippers = criticalOutput.filter(({ checked }) => checked === true);
 
 		const promises = activeShippers
 			.slice(0, simultaneousCount)
@@ -165,7 +47,6 @@
 			console.log(promises.length);
 		}
 		await Promise.all(promises);
-		status = 'done';
 	}
 
 	async function cstReport() {
@@ -177,11 +58,48 @@
 		);
 	}
 
+	async function configure() {
+		config = (await window.api.config.read()).shippers;
+		console.log(config);
+		criticalShippers = config.criticalShippers;
+		preAlerts = config.preAlerts;
+		cstShippers = config.cstShippers;
+
+		criticalOutput = criticalShippers.map((shipper) => ({ ...shipper, status: 'loading' }));
+		criticalOutput.forEach(async (shipper) => {
+			const count = await window.api.shippers.existing({ name: shipper.name, preAlert: false });
+			shipper.count = count;
+			shipper.status = count != undefined ? 'done' : 'none';
+		});
+		preAlertOutput = preAlerts.map((shipper) => ({ ...shipper, status: 'loading' }));
+		preAlertOutput.forEach(async (shipper) => {
+			const count = await window.api.shippers.existing({ name: shipper.name, preAlert: true });
+			shipper.count = count;
+			shipper.status = count != undefined ? 'done' : 'none';
+		});
+	}
+
+	onMount(configure);
+
 	let totalQuantity = $derived(
-		output.reduce((prev, { count }) => (count == undefined ? prev : prev + count), 0)
+		criticalOutput.reduce((prev, { count }) => (count == undefined ? prev : prev + count), 0)
 	);
 
 	let checkAll = $state(true);
+
+	$effect(() => {
+		window.api.config.update(
+			JSON.parse(
+				JSON.stringify({
+					shippers: {
+						criticalShippers,
+						preAlerts,
+						cstShippers
+					}
+				})
+			)
+		);
+	});
 </script>
 
 <div class="bg-slate-400 p-4 rounded-lg flex flex-col overflow-hidden">
@@ -190,7 +108,6 @@
 		<button class="bg-green-500" onclick={shippers}>Let's Go!</button>
 		<button class="bg-blue-500" onclick={cstReport}>CST Report</button>
 		<div class="flex justify-between">
-			<span>{status}</span>
 			<span>{totalQuantity}</span>
 		</div>
 		<div class="flex items-center ps-4 gap-2">
@@ -199,26 +116,76 @@
 				checked={checkAll}
 				onclick={() => {
 					checkAll = !checkAll;
-					output = output.map((shipper) => ({ ...shipper, checked: checkAll }));
+					if (tab === 0) {
+						criticalShippers = criticalShippers.map((shipper) => ({
+							...shipper,
+							checked: checkAll
+						}));
+					} else if (tab === 1) {
+						preAlerts = preAlerts.map((shipper) => ({ ...shipper, checked: checkAll }));
+					}
 				}}
 			/>
 			<span class="text-sm font-bold"> Select/Unselect All </span>
 		</div>
-		<div class="flex flex-col gap-1 pe-2 overflow-y-auto">
-			{#each output as shipper}
-				<div class="bg-slate-100 py-1 px-4 rounded">
-					<div class="flex justify-between gap-4">
-						<input type="checkbox" bind:checked={shipper.checked} />
-						<div class="text-xs font-bold">
-							{shipper.name}
-						</div>
-						<div class="flex">
-							<div class="text-xs">{shipper.count ?? '-'}</div>
-							<div><Icon icon={statusIcons[shipper.status]} /></div>
+		<div class="p-1 overflow-hidden flex flex-col">
+			<div class="flex items-end">
+				<button
+					class="px-2 rounded-t text-white font-bold cursor-pointer"
+					class:bg-slate-800={tab === 0}
+					class:bg-slate-600={tab != 0}
+					class:p-1={tab === 0}
+					onclick={() => (tab = 0)}
+				>
+					Critical Shippers
+				</button>
+				<button
+					class="px-2 rounded-t text-white font-bold cursor-pointer"
+					class:bg-slate-800={tab === 1}
+					class:bg-slate-600={tab != 1}
+					class:p-1={tab === 1}
+					onclick={() => (tab = 1)}
+				>
+					Pre-Alerts
+				</button>
+			</div>
+			<div class="flex flex-col gap-1 p-2 pe-2 overflow-y-auto flex-wrap bg-slate-500">
+				{#each input as shipper, i}
+					<div class="bg-slate-100 py-1 px-4 rounded">
+						<div class="flex justify-between gap-4 items-center">
+							<div class="flex items-center gap-2">
+								<input type="checkbox" bind:checked={shipper.checked} />
+								<div class="text-xs font-bold">
+									{shipper.name}
+								</div>
+							</div>
+							<div class="flex items-center gap-2">
+								<div class="text-xs" class:invisible={output[i].count === undefined}>
+									{criticalOutput[i].count ?? '-'}
+								</div>
+								<div class="group">
+									<span class:hidden={criticalOutput[i].status != 'loading'}>
+										<Icon icon={statusIcons['loading']} class="" />
+									</span>
+									<span class="group-hover:hidden" class:hidden={output[i].status != 'error'}>
+										<Icon icon={statusIcons['error']} class="text-red-600" />
+									</span>
+									<span class="group-hover:hidden" class:hidden={output[i].status != 'done'}>
+										<Icon icon={statusIcons['done']} class="text-green-600" />
+									</span>
+									<button
+										class:hidden={output[i].status != 'none'}
+										class="block group-hover:block cursor-pointer"
+										onclick={() => shipper(number)}
+									>
+										<Icon icon={statusIcons['refresh']} class="text-gray-600" />
+									</button>
+								</div>
+							</div>
 						</div>
 					</div>
-				</div>
-			{/each}
+				{/each}
+			</div>
 		</div>
 	</div>
 </div>

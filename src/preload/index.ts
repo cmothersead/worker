@@ -37,7 +37,10 @@ const api = {
 	shippers: {
 		run: (args: { name: string; accountNumbers: string | string[]; headless: boolean }) =>
 			ipcRenderer.invoke('shippers:run', args),
-		aggregate: (args) => ipcRenderer.send('shippers:aggregate', args)
+		aggregate: (args: { name: string; preAlert: boolean }[]) =>
+			ipcRenderer.send('shippers:aggregate', args),
+		existing: (args: { name: string; preAlert: boolean }) =>
+			ipcRenderer.invoke('shippers:existing', args)
 	},
 	cache: {
 		read: () => ipcRenderer.invoke('cache:read'),

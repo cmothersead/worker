@@ -8,7 +8,7 @@ import { scorecard } from './scripts/browser';
 import { monitorShipper } from './scripts/monitor';
 import { readFileSync, writeFileSync } from 'fs';
 import { getExistingLIMBO, limbo } from './scripts/limbo';
-import { aggregate, shipper } from './scripts/shippers';
+import { aggregate, checkExisting, shipper } from './scripts/shippers';
 
 const { username, password } = readConfig();
 
@@ -81,12 +81,12 @@ function createWindow(): void {
 	ipcMain.handle('limbo:run', async (_, args) => await limbo(args));
 	ipcMain.handle('limbo:existing', async () => await getExistingLIMBO());
 	ipcMain.handle('scorecard:run', async (_, args) => await scorecard(args));
-	ipcMain.on('stop', () => {
-		console.log('aborting');
-		controller.abort();
-		controller = new AbortController();
-		signal = controller.signal;
-	});
+	// ipcMain.on('stop', () => {
+	// 	console.log('aborting');
+	// 	controller.abort();
+	// 	controller = new AbortController();
+	// 	signal = controller.signal;
+	// });
 	ipcMain.handle('monitor:shippers', () => {
 		return readConfig().monitor;
 	});
@@ -110,6 +110,7 @@ function createWindow(): void {
 		return await shipper({ name, accountNumbers, preAlert, headless });
 	});
 	ipcMain.on('shippers:aggregate', async (_, args) => aggregate(args));
+	ipcMain.handle('shippers:existing', async (_, args) => checkExisting(args));
 	ipcMain.handle('config:read', () => readConfig());
 	ipcMain.on('config:update', (_, updateObject) => {
 		const config = readConfig();

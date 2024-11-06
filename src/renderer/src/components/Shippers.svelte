@@ -53,7 +53,7 @@
 		window.api.shippers.aggregate(
 			cstShippers.map((shipper) => ({
 				name: shipper,
-				preAlert: prealerts.some(({ name }) => shipper === name)
+				preAlert: preAlerts.some(({ name }) => shipper === name)
 			}))
 		);
 	}
@@ -149,7 +149,7 @@
 					Pre-Alerts
 				</button>
 			</div>
-			<div class="flex flex-col gap-1 p-2 pe-2 overflow-y-auto flex-wrap bg-slate-500">
+			<div class="flex flex-col gap-1 p-2 pe-2 overflow-y-auto bg-slate-500">
 				{#each input as shipper, i}
 					<div class="bg-slate-100 py-1 px-4 rounded">
 						<div class="flex justify-between gap-4 items-center">

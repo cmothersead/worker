@@ -52,6 +52,7 @@ export const monitorConfig = {
 		'Tracking Number',
 		'HIPS Date Time IND Earliest',
 		'COMM Comment Latest',
+		'COMM Time Latest',
 		'CONS Time Latest',
 		'CONS Loc Latest',
 		'NAK All',

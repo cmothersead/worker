@@ -176,7 +176,7 @@
 									<button
 										class:hidden={output[i].status != 'none'}
 										class="block group-hover:block cursor-pointer"
-										onclick={() => shipper(number)}
+										onclick={() => {}}
 									>
 										<Icon icon={statusIcons['refresh']} class="text-gray-600" />
 									</button>

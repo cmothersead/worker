@@ -87,22 +87,23 @@ export async function monitorShipper(inPath: string, outPath: string, headless: 
 		];
 	});
 
+	const consLocIndex = monitorConfig.fields.findIndex((val) => val === 'CONS Loc Latest') + 5;
 	const sortedRows = todaySheet
 		.getRows(1, todaySheet.rowCount - 1)
 		?.map(({ values }) => values)
 		// ?.filter((values) => values[2].startsWith('N'))
 		?.toSorted((a, b) =>
-			a[9] === 'CONS Loc Latest'
+			a[consLocIndex] === 'CONS Loc Latest'
 				? -1
-				: b[9] === 'CONS Loc Latest'
+				: b[consLocIndex] === 'CONS Loc Latest'
 					? 1
-					: a[9] === undefined
-						? b[9] === undefined
+					: a[consLocIndex] === undefined
+						? b[consLocIndex] === undefined
 							? 0
 							: -1
-						: b[9] === undefined
+						: b[consLocIndex] === undefined
 							? 1
-							: a[9].toString().localeCompare(b[9].toString())
+							: a[consLocIndex].toString().localeCompare(b[consLocIndex].toString())
 		) as Excel.CellValue[][] | undefined;
 
 	if (sortedRows === undefined) return {};
@@ -110,14 +111,16 @@ export async function monitorShipper(inPath: string, outPath: string, headless: 
 	todaySheet.spliceRows(1, todaySheet.rowCount + 1, ...sortedRows);
 
 	todaySheet.eachRow((row) => {
-		if (row.getCell(9).value === 'INDHU') {
+		if (row.getCell(consLocIndex).value === 'INDHU') {
 			row.eachCell({ includeEmpty: true }, (cell, index) => {
-				if (index < 10) cell.fill = fills.INDHU;
+				if (index < consLocIndex + 1) cell.fill = fills.INDHU;
 			});
 		}
 	});
 
-	const scannedCount = sortedRows.filter((row) => row[9] == 'INDHU').length;
+	console.log(consLocIndex);
+
+	const scannedCount = sortedRows.filter((row) => row[consLocIndex] == 'INDHU').length;
 
 	await newWorkbook.xlsx.writeFile(outPath);
 	console.log('all done');

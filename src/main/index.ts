@@ -6,13 +6,16 @@ import icon from '../../resources/icon.png?asset';
 import { getCONSNumber, getExistingLaneToLanes, laneToLane } from './scripts/laneToLane';
 import { scorecard } from './scripts/browser';
 import { monitorShipper } from './scripts/monitor';
-import { readFileSync, writeFileSync } from 'fs';
+import { existsSync, readFileSync, writeFileSync } from 'fs';
 import { getExistingLIMBO, limbo } from './scripts/limbo';
 import { aggregate, checkExisting, shipper } from './scripts/shippers';
 
 const { username, password } = readConfig();
 
 function readConfig() {
+	if (!existsSync('config.json')) {
+		writeFileSync('config.json', '{}');
+	}
 	return JSON.parse(readFileSync('config.json').toString());
 }
 
@@ -21,6 +24,9 @@ function writeConfig(data: any) {
 }
 
 function readCache() {
+	if (!existsSync('cache.json')) {
+		writeFileSync('cache.json', '{}');
+	}
 	return JSON.parse(readFileSync('cache.json').toString());
 }
 
@@ -39,7 +45,8 @@ function createWindow(): void {
 		webPreferences: {
 			preload: join(__dirname, '../preload/index.mjs'),
 			sandbox: false
-		}
+		},
+		icon: 'resources/icon.png'
 	});
 
 	mainWindow.on('ready-to-show', () => {

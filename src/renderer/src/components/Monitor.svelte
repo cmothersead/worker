@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import SettingsButton from './SettingsButton.svelte';
-	import type { Config, MonitorConfig, Shipper, ShipperResult } from '.';
+	import type { Cache, Config, MonitorConfig, Shipper, ShipperResult } from '.';
 
 	interface Props {
 		config: Config;
@@ -15,14 +15,21 @@
 	let shippers: Shipper[] = $state([]);
 	let outbounds: Shipper[] = $state([]);
 
+	let results: { [name: string]: ShipperResult | undefined } = $state({});
+	let settings = $state(false);
+
 	onMount(() => {
 		config = fullConfig.monitor;
 		shippers = config.shippers ?? [];
 		outbounds = config.outbounds ?? [];
+		results = cache.monitor ?? {};
 	});
 
-	let results: { [name: string]: ShipperResult | undefined } = $state({});
-	let settings = $state(false);
+	$effect(() => {
+		if (cache) {
+			cache.monitor = results;
+		}
+	});
 
 	function runAll() {
 		shippers.filter(({ selected }) => selected).forEach(runShipper);

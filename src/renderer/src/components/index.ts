@@ -77,7 +77,9 @@ export interface MonitorConfig {
 	automatic: boolean;
 }
 
-export interface MonitorCache {}
+export interface MonitorCache {
+	[name: string]: ShipperResult;
+}
 
 export interface ShipperConfig {
 	criticalShippers: { name: string; accountNumbers: string | string[]; checked: boolean }[];

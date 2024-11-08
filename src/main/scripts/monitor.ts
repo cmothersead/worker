@@ -59,7 +59,7 @@ export async function monitorShipper(inPath: string, outPath: string, headless: 
 	const results = await dreuiReport(monitorConfig, trackingNumbers, headless);
 	console.log('dreui done');
 	todaySheet.eachRow((row, index) => {
-		if (index == 1) return;
+		if (index == 1 || !Number.isSafeInteger(parseInt(row.values[1]))) return;
 		const result = results
 			.find((result) => result[0] == row.values[1])
 			.map((value) => (value == '' ? null : value));

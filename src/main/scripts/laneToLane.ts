@@ -14,8 +14,8 @@ const dests = {
 	1645: 'OAK',
 	1648: 'ONT',
 	1650: 'LAX',
-	'0151': 'YYZ',
-	'0153': 'YMX',
+	151: 'YYZ',
+	153: 'YMX',
 	1600: 'EWR',
 	1601: 'DFW',
 	1602: 'ORD',
@@ -71,7 +71,7 @@ export async function laneToLane({
 	signal,
 	window
 }: {
-	consNumber: number | string;
+	consNumber: string;
 	outputDirectoryPath: string;
 	archiveDirectoryPath: string;
 	headless: boolean;
@@ -100,47 +100,39 @@ export async function laneToLane({
 	await saveOutput(today, downloadData, outputDirectoryPath, archiveDirectoryPath, window);
 }
 
-export async function getExistingLaneToLanes({
-	flightNumbers,
+export async function laneToLaneExists({
+	flightNumber,
 	outputDirectoryPath
 }: {
-	flightNumbers: number[];
+	flightNumber: number;
 	outputDirectoryPath: string;
 }) {
 	const today = getToday();
-	return flightNumbers
-		.map((flight) => ({
-			number: flight,
-			path: `${outputDirectoryPath}/F${flight} ${dests[flight]} ${today.toLocaleDateString(
-				'en-us',
-				{
-					month: '2-digit'
-				}
-			)}${today.toLocaleDateString('en-us', { day: '2-digit' })}.xlsx`,
-			status: 'done'
-		}))
-		.filter(({ path }) => existsSync(path));
+	const path = `${outputDirectoryPath}/F${flightNumber} ${dests[flightNumber]} ${today.toLocaleDateString(
+		'en-us',
+		{
+			month: '2-digit'
+		}
+	)}${today.toLocaleDateString('en-us', { day: '2-digit' })}.xlsx`;
+	return existsSync(path) ? path : undefined;
 }
 
 export async function getCONSNumber({
 	flightNumber,
 	headless,
 	username,
-	password,
-	window
+	password
 }: {
 	flightNumber: number;
 	headless: boolean;
 	username: string;
 	password: string;
-	window: BrowserWindow;
 }) {
 	return await lookupConsFromFlight({
 		flightNumber,
 		headless,
 		username,
 		password,
-		window,
 		today: getToday()
 	});
 }
@@ -181,7 +173,6 @@ async function lookupConsFromFlight({
 	password: string;
 	today: Date;
 	headless: boolean;
-	window: BrowserWindow;
 }) {
 	const todayString = today.toLocaleDateString('en-us', {
 		month: 'long',

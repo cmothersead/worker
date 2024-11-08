@@ -3,7 +3,7 @@ import { join } from 'path';
 import { electronApp, optimizer, is } from '@electron-toolkit/utils';
 import { getToday } from './scripts';
 import icon from '../../resources/icon.png?asset';
-import { getCONSNumber, getExistingLaneToLanes, laneToLane } from './scripts/laneToLane';
+import { getCONSNumber, laneToLane, laneToLaneExists } from './scripts/laneToLane';
 import { scorecard } from './scripts/browser';
 import { monitorShipper } from './scripts/monitor';
 import { existsSync, readFileSync, writeFileSync } from 'fs';
@@ -27,10 +27,18 @@ function readCache() {
 	if (!existsSync('cache.json')) {
 		writeFileSync('cache.json', '{}');
 	}
-	return JSON.parse(readFileSync('cache.json').toString());
+	const today = getToday();
+	return JSON.parse(readFileSync('cache.json').toString())[today.toDateString()];
 }
 
-function writeCache(data: string) {
+function writeCache(update: any) {
+	const today = getToday().toDateString();
+	const data = JSON.stringify({
+		[today]: {
+			...readCache()[today],
+			...update
+		}
+	});
 	writeFileSync('cache.json', data);
 }
 
@@ -77,52 +85,35 @@ function createWindow(): void {
 			})
 	);
 	ipcMain.handle('laneToLane:cons', async (_, { flightNumber, headless }) => {
-		const todayString = getToday().toDateString();
-		const cachedCONS = readCache()[todayString][flightNumber];
-		if (cachedCONS != undefined) return cachedCONS;
-
-		return await getCONSNumber({ flightNumber, headless, window: mainWindow, username, password });
+		return await getCONSNumber({ flightNumber, headless, username, password });
 	});
-	ipcMain.on('laneToLane:open', (_, path) => shell.openPath(path));
-	ipcMain.handle('laneToLane:existing', (_, args) => getExistingLaneToLanes(args));
+	ipcMain.handle('laneToLane:exists', (_, args) => laneToLaneExists(args));
+
 	ipcMain.handle('limbo:run', async (_, args) => await limbo(args));
 	ipcMain.handle('limbo:existing', async () => await getExistingLIMBO());
+
 	ipcMain.handle('scorecard:run', async (_, args) => await scorecard(args));
-	// ipcMain.on('stop', () => {
-	// 	console.log('aborting');
-	// 	controller.abort();
-	// 	controller = new AbortController();
-	// 	signal = controller.signal;
-	// });
-	ipcMain.handle('monitor:shippers', () => {
-		return readConfig().monitor;
-	});
+
 	ipcMain.handle('monitor:run', async (_, { data, headless }) =>
 		monitorShipper(data.inPath, data.outPath, headless)
 	);
-	ipcMain.handle('cache:read', () => readCache());
-	ipcMain.on('cache:update', (_, update) => {
-		const cache = readCache();
-		const today = getToday().toDateString();
-		writeCache(
-			JSON.stringify({
-				[today]: {
-					...cache[today],
-					...update
-				}
-			})
-		);
-	});
-	ipcMain.handle('shippers:run', async (_, { name, accountNumbers, preAlert, headless }) => {
-		return await shipper({ name, accountNumbers, preAlert, headless });
-	});
+
+	ipcMain.handle('shippers:run', async (_, args) => shipper(args));
 	ipcMain.on('shippers:aggregate', async (_, args) => aggregate(args));
 	ipcMain.handle('shippers:existing', async (_, args) => checkExisting(args));
+
+	ipcMain.handle('cache:read', () => readCache());
+	ipcMain.on('cache:update', (_, update) => {
+		writeCache(update);
+	});
+
 	ipcMain.handle('config:read', () => readConfig());
 	ipcMain.on('config:update', (_, updateObject) => {
 		const config = readConfig();
 		writeConfig({ ...config, ...updateObject });
 	});
+
+	ipcMain.on('file:open', (_, path) => shell.openPath(path));
 	ipcMain.handle('dialog:folder', () =>
 		dialog.showOpenDialogSync({ properties: ['openDirectory'] })
 	);

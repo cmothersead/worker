@@ -1,14 +1,29 @@
 <script lang="ts">
 	import Icon from '@iconify/svelte';
 	import { LaneToLanes, Limbo, Monitor, Shippers } from './components';
+	import { onMount } from 'svelte';
 
 	const email = 'colin.mothersead@fedex.com';
+	let config: any = $state();
+	let cache: any = $state();
 	let headless = $state(true);
 	let settings = $state(false);
-	let maxWindows = 5;
+	let maxWindows = $state(5);
+
+	onMount(async () => {
+		config = await window.api.config.read();
+		cache = await window.api.cache.read();
+	});
+
+	// $effect(() => {
+	// 	if (cache) window.api.config.update(JSON.parse(JSON.stringify(config)));
+	// });
+	// $effect(() => {
+	// 	if (cache) window.api.cache.update(JSON.parse(JSON.stringify(cache)));
+	// });
 </script>
 
-<div class="container mx-auto py-8 h-full flex flex-col gap-4 overflow-hidden">
+<div class="container mx-auto py-8 h-full flex flex-col gap-5 overflow-hidden">
 	<div class="flex justify-between items-center">
 		<div class="flex items-center gap-3">
 			<img src="src/assets/fedex-logo.png" alt="" class="h-10" />
@@ -27,10 +42,12 @@
 	</div>
 
 	<div class="flex flex-col flex-wrap gap-2 overflow-hidden" class:hidden={settings}>
-		<LaneToLanes {headless} />
-		<Limbo {headless} />
-		<Monitor {headless} />
-		<Shippers {headless} />
+		{#if config && cache}
+			<LaneToLanes {config} {cache} />
+			<Limbo {config} {cache} />
+			<Monitor {config} {cache} />
+			<Shippers {config} {cache} />
+		{/if}
 	</div>
 	<div class="flex-grow bg-slate-400 rounded-lg py-4 px-6" class:hidden={!settings}>
 		<h1 class="text-3xl font-semibold">Settings</h1>

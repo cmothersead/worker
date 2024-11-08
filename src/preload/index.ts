@@ -5,18 +5,17 @@ import { electronAPI } from '@electron-toolkit/preload';
 const api = {
 	laneToLane: {
 		run: (args: {
-			consNumber: number;
+			consNumber: string;
 			outputDirectoryPath: string;
 			archiveDirectoryPath: string;
 			headless: boolean;
 		}) => ipcRenderer.send('laneToLane:run', args),
-		receiveUpdate: (callback) =>
-			ipcRenderer.on('laneToLane:update', (_event, value) => callback(_event, value)),
-		getExisting: (args: { flightNumbers: number[]; outputDirectoryPath: string }) =>
-			ipcRenderer.invoke('laneToLane:existing', args),
+		// receiveUpdate: (callback) =>
+		// 	ipcRenderer.on('laneToLane:update', (_event, value) => callback(_event, value)),
+		exists: (args: { flightNumber: number; outputDirectoryPath: string }) =>
+			ipcRenderer.invoke('laneToLane:exists', args),
 		cons: (args: { flightNumber: number; headless: boolean }) =>
-			ipcRenderer.invoke('laneToLane:cons', args),
-		open: (path: string) => ipcRenderer.send('laneToLane:open', path)
+			ipcRenderer.invoke('laneToLane:cons', args)
 	},
 	limbo: {
 		run: (args: { date: Date; untilIndex: number; headless: boolean }) =>
@@ -49,6 +48,9 @@ const api = {
 	config: {
 		read: () => ipcRenderer.invoke('config:read'),
 		update: (updateObject) => ipcRenderer.send('config:update', updateObject)
+	},
+	file: {
+		open: (path: string) => ipcRenderer.send('file:open', path)
 	},
 	dialog: {
 		folder: () => ipcRenderer.invoke('dialog:folder')

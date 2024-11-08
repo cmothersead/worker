@@ -6,18 +6,17 @@ export declare global {
 		api: {
 			laneToLane: {
 				run: (args: {
-					consNumber: number;
+					consNumber: string;
 					outputDirectoryPath: string;
 					archiveDirectoryPath: string;
 					headless: boolean;
 				}) => Promise<any>;
-				receiveUpdate;
-				getExisting: (args: {
-					flightNumbers: number[];
+				// receiveUpdate;
+				exists: (args: {
+					flightNumber: number;
 					outputDirectoryPath: string;
-				}) => Promise<any>;
-				cons: (args: { flightNumber: number; headless: boolean }) => Promise<number>;
-				open: (path: string) => void;
+				}) => Promise<string | undefined>;
+				cons: (args: { flightNumber: number; headless: boolean }) => Promise<string>;
 			};
 			limbo: {
 				run: (args: { date: Date; untilIndex: number; headless: boolean }) => Promise<{
@@ -54,6 +53,9 @@ export declare global {
 			config: {
 				read: () => Promise<any>;
 				update: (updateObject) => void;
+			};
+			file: {
+				open: (path: string) => void;
 			};
 			dialog: {
 				folder: () => Promise<string>;

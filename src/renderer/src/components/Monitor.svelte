@@ -1,35 +1,28 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import SettingsButton from './SettingsButton.svelte';
+	import type { Config, MonitorConfig, Shipper, ShipperResult } from '.';
 
-	type Shipper = {
-		name: string;
-		inPath: string;
-		outPath: string;
-		active?: boolean;
-		selected?: boolean;
-	};
+	interface Props {
+		config: Config;
+		cache: Cache;
+	}
 
-	type ShipperResult = {
-		pieceCount?: number;
-		scannedCount?: number;
-	};
+	let { config: fullConfig, cache }: Props = $props();
+	let { headless } = $derived(fullConfig);
 
-	let { headless = true } = $props();
-	let config = $state(undefined);
-	let settings = $state(false);
+	let config: MonitorConfig = $state();
 	let shippers: Shipper[] = $state([]);
 	let outbounds: Shipper[] = $state([]);
-	let results: { [name: string]: ShipperResult | undefined } = $state({});
-	let pieceCountDisplay = $state(true);
-	let automatic = $state(true);
 
-	async function configure() {
-		config = (await window.api.config.read()).monitor;
+	onMount(() => {
+		config = fullConfig.monitor;
 		shippers = config.shippers ?? [];
 		outbounds = config.outbounds ?? [];
-		pieceCountDisplay = config.pieceCountDisplay;
-	}
+	});
+
+	let results: { [name: string]: ShipperResult | undefined } = $state({});
+	let settings = $state(false);
 
 	function runAll() {
 		shippers.filter(({ selected }) => selected).forEach(runShipper);
@@ -50,59 +43,57 @@
 	}
 
 	async function schedule() {
-		while (automatic) {
+		while (config.automatic) {
 			await new Promise((r) => setTimeout(r, 300000));
 			console.log(Date.now());
 		}
 	}
 
-	onMount(configure);
+	function openFile(path: string) {
+		window.api.file.open(path);
+	}
 
 	$effect(() => {
-		window.api.config.update(JSON.parse(JSON.stringify({ monitor: { ...config } })));
-	});
-	$effect(() => {
-		window.api.cache.update(JSON.parse(JSON.stringify({ monitor: results })));
-	});
-	$effect(() => {
-		if (automatic) schedule();
+		if (config?.automatic) schedule();
 	});
 </script>
 
-<div class="bg-slate-400 flex flex-col gap-2 p-4 rounded-lg">
-	<div class="flex justify-between items-center">
-		<h1 class="text-xl font-bold">Monitor</h1>
-		<SettingsButton bind:settings />
-	</div>
-	<div class="flex flex-col gap-1">
-		<div class="flex items-center gap-2">
-			<button class="bg-green-400 rounded px-2 flex-grow" onclick={runAll}>Start</button>
-			<label class="flex items-center gap-1 text-sm font-bold"
-				>Automatic <input type="checkbox" bind:checked={automatic} /></label
-			>
+{#if config}
+	<div class="bg-slate-400 flex flex-col gap-2 p-4 rounded-lg">
+		<div class="flex justify-between items-center">
+			<h1 class="text-xl font-bold">Monitor</h1>
+			<SettingsButton bind:settings />
 		</div>
-		{#if !settings}
-			<div>
-				Shippers
-				<div class="flex flex-col gap-2">
-					{#each shippers.filter(({ active }) => active) as shipper}
-						{@render shipperModule(shipper)}
-					{/each}
-				</div>
+		<div class="flex flex-col gap-1">
+			<div class="flex items-center gap-2">
+				<button class="bg-green-400 rounded px-2 flex-grow" onclick={runAll}>Start</button>
+				<label class="flex items-center gap-1 text-sm font-bold"
+					>Automatic <input type="checkbox" bind:checked={config.automatic} /></label
+				>
 			</div>
-			<div>
-				Outbounds
-				<div class="flex flex-col gap-2">
-					{#each outbounds.filter(({ active }) => active) as outbound}
-						{@render shipperModule(outbound)}
-					{/each}
+			{#if !settings}
+				<div>
+					Shippers
+					<div class="flex flex-col gap-2">
+						{#each shippers.filter(({ active }) => active) as shipper}
+							{@render shipperModule(shipper)}
+						{/each}
+					</div>
 				</div>
-			</div>
-		{:else}
-			{@render settingsSection()}
-		{/if}
+				<div>
+					Outbounds
+					<div class="flex flex-col gap-2">
+						{#each outbounds.filter(({ active }) => active) as outbound}
+							{@render shipperModule(outbound)}
+						{/each}
+					</div>
+				</div>
+			{:else}
+				{@render settingsSection()}
+			{/if}
+		</div>
 	</div>
-</div>
+{/if}
 
 {#snippet settingsSection()}
 	<h1 class="text-lg font-bold">Settings</h1>
@@ -144,12 +135,12 @@
 	{@const result = results[shipper.name]}
 	<div class="bg-slate-100 px-4 py-2 rounded">
 		<div class="flex justify-between gap-2 items-center">
-			<div class="font-bold">
+			<button class="font-bold" onclick={() => openFile(shipper.outPath)}>
 				{shipper.name}
-			</div>
+			</button>
 			{#if result?.pieceCount}
-				<button onclick={() => (pieceCountDisplay = !pieceCountDisplay)}>
-					{#if pieceCountDisplay}
+				<button onclick={() => (config.pieceCountDisplay = !config.pieceCountDisplay)}>
+					{#if config.pieceCountDisplay}
 						<span class="text-xs">{result.scannedCount}/{result.pieceCount}</span>
 					{:else}
 						{Math.round((result.scannedCount / result.pieceCount) * 10000) / 100}%

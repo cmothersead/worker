@@ -12,55 +12,41 @@ export async function monitorShipper(inPath: string, outPath: string, headless: 
 	const oldWorkbook = new Excel.Workbook();
 	await oldWorkbook.xlsx.readFile(inPath);
 
-	var todaySheet = newWorkbook.getWorksheet(todayString) as Excel.Worksheet & { orderNo: number };
+	const todaySheet = (newWorkbook.getWorksheet(todayString) ??
+		newWorkbook.addWorksheet(todayString)) as Excel.Worksheet & { orderNo: number };
 
-	if (todaySheet === undefined) {
-		todaySheet = newWorkbook.addWorksheet(todayString) as Excel.Worksheet & { orderNo: number };
+	newWorkbook.worksheets
+		.map(({ name }) => name)
+		.sort((a, b) => b.localeCompare(a))
+		.forEach((name, index) => {
+			const sheet = newWorkbook.getWorksheet(name) as Excel.Worksheet & { orderNo: number };
+			if (sheet == undefined) return;
+			sheet.orderNo = index + 1;
+		});
+	todaySheet.orderNo = 0;
+	newWorkbook.views = [
+		{
+			x: 0,
+			y: 0,
+			width: 10000,
+			height: 20000,
+			firstSheet: 0,
+			activeTab: 0,
+			visibility: 'visible'
+		}
+	];
 
-		newWorkbook.worksheets
-			.map(({ name }) => name)
-			.sort((a, b) => b.localeCompare(a))
-			.forEach((name, index) => {
-				const sheet = newWorkbook.getWorksheet(name) as Excel.Worksheet & { orderNo: number };
-				if (sheet == undefined) return;
-				sheet.orderNo = index + 1;
-			});
-		todaySheet.orderNo = 0;
-		newWorkbook.views = [
-			{
-				x: 0,
-				y: 0,
-				width: 10000,
-				height: 20000,
-				firstSheet: 0,
-				activeTab: 0,
-				visibility: 'visible'
-			}
-		];
-
-		const oldTodaySheet = oldWorkbook.getWorksheet(todayString);
-		if (oldTodaySheet == undefined)
-			throw new Error(`Sheet: ${todayString} not found in file: ${inPath}`);
-		oldTodaySheet.eachRow((row) => todaySheet.addRow(row.values));
-		const trackingNumberColumn = todaySheet.getColumn(1);
-		trackingNumberColumn.numFmt = '0';
-		trackingNumberColumn.width = 13;
-		todaySheet.spliceColumns(
-			5,
-			0,
-			['Tracking Number'],
-			['HIPS Date Time IND Earliest'],
-			['COMM Comment Latest'],
-			['CONS Time Latest'],
-			['CONS Loc Latest'],
-			['NAK All'],
-			['LBL All'],
-			['HOPS Date Time IND Latest']
-		);
-		todaySheet.getColumn('E').numFmt = '0';
-		todaySheet.getColumn('E').width = 13;
-		todaySheet.getColumn('H').numFmt = '0';
-	}
+	const oldTodaySheet = oldWorkbook.getWorksheet(todayString);
+	if (oldTodaySheet == undefined)
+		throw new Error(`Sheet: ${todayString} not found in file: ${inPath}`);
+	oldTodaySheet.eachRow((row) => todaySheet.addRow(row.values));
+	const trackingNumberColumn = todaySheet.getColumn(1);
+	trackingNumberColumn.numFmt = '0';
+	trackingNumberColumn.width = 13;
+	todaySheet.spliceColumns(5, 0, ...monitorConfig.fields.map((val) => [val]));
+	todaySheet.getColumn('E').numFmt = '0';
+	todaySheet.getColumn('E').width = 13;
+	todaySheet.getColumn('H').numFmt = '0';
 
 	const fills: { [key: string]: FillPattern } = {
 		INDHU: {
@@ -69,7 +55,6 @@ export async function monitorShipper(inPath: string, outPath: string, headless: 
 			fgColor: { argb: 'FFFFFF00' }
 		}
 	};
-	const trackingNumberColumn = todaySheet.getColumn(1);
 	const trackingNumbers = trackingNumberColumn.values.slice(2) as number[];
 	const results = await dreuiReport(monitorConfig, trackingNumbers, headless);
 	console.log('dreui done');
@@ -118,11 +103,24 @@ export async function monitorShipper(inPath: string, outPath: string, headless: 
 		}
 	});
 
-	console.log(consLocIndex);
-
 	const scannedCount = sortedRows.filter((row) => row[consLocIndex] == 'INDHU').length;
 
 	await newWorkbook.xlsx.writeFile(outPath);
 	console.log('all done');
+	return { pieceCount: todaySheet.rowCount - 1, scannedCount };
+}
+
+export async function checkShipper(outPath: string) {
+	const today = getToday();
+	const todayString = `${today.toLocaleDateString('en-us', { month: '2-digit' })}${today.toLocaleDateString('en-us', { day: '2-digit' })}`;
+	const workbook = new Excel.Workbook();
+	await workbook.xlsx.readFile(outPath);
+	const todaySheet = workbook.getWorksheet(todayString);
+	if (todaySheet === undefined) return { pieceCount: undefined, scannedCount: undefined };
+
+	const consLocIndex = monitorConfig.fields.findIndex((val) => val === 'CONS Loc Latest') + 5;
+	const scannedCount = todaySheet
+		.getRows(2, todaySheet.rowCount)
+		?.filter((row) => row[consLocIndex] == 'INDHU').length;
 	return { pieceCount: todaySheet.rowCount - 1, scannedCount };
 }

@@ -74,7 +74,7 @@ export async function monitorShipper(inPath: string, outPath: string, headless: 
 
 	const consLocIndex = monitorConfig.fields.findIndex((val) => val === 'CONS Loc Latest') + 5;
 	const sortedRows = todaySheet
-		.getRows(1, todaySheet.rowCount - 1)
+		.getRows(1, todaySheet.rowCount)
 		?.map(({ values }) => values)
 		// ?.filter((values) => values[2].startsWith('N'))
 		?.toSorted((a, b) =>

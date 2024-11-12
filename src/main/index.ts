@@ -28,7 +28,7 @@ function readCache() {
 		writeFileSync('cache.json', '{}');
 	}
 	const today = getToday();
-	return JSON.parse(readFileSync('cache.json').toString())[today.toDateString()];
+	return JSON.parse(readFileSync('cache.json').toString())[today.toDateString()] ?? {};
 }
 
 function writeCache(update: any) {

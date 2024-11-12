@@ -126,9 +126,6 @@
 		<div class="flex flex-col gap-1 overflow-hidden">
 			<button class="bg-green-500" onclick={shippers}>Let's Go!</button>
 			<button class="bg-blue-500" onclick={cstReport}>CST Report</button>
-			<div class="flex justify-between">
-				<span>{totalQuantity}</span>
-			</div>
 			<div class="flex items-center ps-4 gap-2">
 				<input
 					type="checkbox"
@@ -206,6 +203,9 @@
 					{/each}
 				</div>
 			</div>
+		</div>
+		<div class="flex justify-center gap-4">
+			<b>Total Pieces:</b><span>{totalQuantity}</span>
 		</div>
 	</div>
 {/if}

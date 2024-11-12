@@ -36,10 +36,13 @@ export async function monitorShipper(inPath: string, outPath: string, headless: 
 		}
 	];
 
-	const oldTodaySheet = oldWorkbook.getWorksheet(todayString);
-	if (oldTodaySheet == undefined)
-		throw new Error(`Sheet: ${todayString} not found in file: ${inPath}`);
-	oldTodaySheet.eachRow((row) => todaySheet.addRow(row.values));
+	if (todaySheet.rowCount === 0) {
+		const oldTodaySheet = oldWorkbook.getWorksheet(todayString);
+		if (oldTodaySheet == undefined)
+			throw new Error(`Sheet: ${todayString} not found in file: ${inPath}`);
+		oldTodaySheet.eachRow((row) => todaySheet.addRow(row.values));
+	}
+
 	const trackingNumberColumn = todaySheet.getColumn(1);
 	trackingNumberColumn.numFmt = '0';
 	trackingNumberColumn.width = 13;
@@ -53,6 +56,11 @@ export async function monitorShipper(inPath: string, outPath: string, headless: 
 			type: 'pattern',
 			pattern: 'solid',
 			fgColor: { argb: 'FFFFFF00' }
+		},
+		MEMH: {
+			type: 'pattern',
+			pattern: 'solid',
+			fgColor: { argb: 'FF92D050' }
 		}
 	};
 	const trackingNumbers = trackingNumberColumn.values.slice(2) as number[];
@@ -73,10 +81,21 @@ export async function monitorShipper(inPath: string, outPath: string, headless: 
 	});
 
 	const consLocIndex = monitorConfig.fields.findIndex((val) => val === 'CONS Loc Latest') + 5;
+	function after0200() {
+		if (new Date(Date.now()).getHours() < 2) return false;
+		if (new Date(Date.now()).getHours() > 10) return false;
+		return false;
+	}
 	const sortedRows = todaySheet
 		.getRows(1, todaySheet.rowCount)
 		?.map(({ values }) => values)
-		// ?.filter((values) => values[2].startsWith('N'))
+		?.filter((values) => {
+			if (values[2].startsWith('X') && after0200() && values[consLocIndex] === '') {
+				return false;
+			} else {
+				return true;
+			}
+		})
 		?.toSorted((a, b) =>
 			a[consLocIndex] === 'CONS Loc Latest'
 				? -1
@@ -96,18 +115,21 @@ export async function monitorShipper(inPath: string, outPath: string, headless: 
 	todaySheet.spliceRows(1, todaySheet.rowCount + 1, ...sortedRows);
 
 	todaySheet.eachRow((row) => {
-		if (row.getCell(consLocIndex).value === 'INDHU') {
+		const val = row.getCell(consLocIndex).value?.toString() ?? '';
+		if (val !== '') {
 			row.eachCell({ includeEmpty: true }, (cell, index) => {
-				if (index < consLocIndex + 1) cell.fill = fills.INDHU;
+				if (index < consLocIndex + 1) cell.fill = fills[val];
 			});
 		}
 	});
 
-	const scannedCount = sortedRows.filter((row) => row[consLocIndex] == 'INDHU').length;
+	const scannedCount = sortedRows.filter(
+		(row) => row[consLocIndex] == 'INDHU' || row[consLocIndex] === 'MEMH'
+	).length;
 
 	await newWorkbook.xlsx.writeFile(outPath);
 	console.log('all done');
-	return { pieceCount: todaySheet.rowCount - 1, scannedCount };
+	return { pieceCount: sortedRows.length - 1, scannedCount };
 }
 
 export async function checkShipper(outPath: string) {

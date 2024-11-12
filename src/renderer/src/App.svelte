@@ -34,7 +34,9 @@
 			</div>
 
 			<button
-				class="rounded p-3 bg-gray-600 text-white text-xl flex items-center gap-2"
+				class="rounded p-3 text-xl flex items-center gap-2 {settings
+					? 'bg-white border-2 border-gray-600 text-gray-600'
+					: 'bg-gray-600 text-white'}"
 				onclick={() => (settings = !settings)}
 			>
 				<Icon icon="mdi:gear" class="text-2xl" /> <span>Settings</span>

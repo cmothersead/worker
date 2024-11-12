@@ -59,5 +59,5 @@ export const monitorConfig = {
 		'LBL All',
 		'HOPS Date Time IND Latest'
 	],
-	locFilter: 'INDHU'
+	locFilter: 'INDHU MEMH'
 };

@@ -1,14 +1,7 @@
 <script lang="ts">
 	import Icon from '@iconify/svelte';
 	import { dests, cities } from '../data';
-	import {
-		openFile,
-		statusIcons,
-		type LaneToLaneConfig,
-		type LaneToLaneCache,
-		type Config,
-		type Cache
-	} from '.';
+	import { openFile, statusIcons, type LaneToLaneConfig, type Config, type Cache } from '.';
 	import { onMount } from 'svelte';
 	import { slide } from 'svelte/transition';
 	import SettingsButton from './SettingsButton.svelte';
@@ -89,17 +82,22 @@
 	}
 
 	async function laneToLane(flightNumber: number) {
-		output = output.map((flight) => ({
-			...flight,
-			status: flight.number === flightNumber ? 'loading' : flight.status
-		}));
-		await window.api.laneToLane.run({
+		const flight = output.find(({ number }) => number === flightNumber);
+		flight.status = 'loading';
+		const result = await window.api.laneToLane.run({
 			consNumber: output.find(({ number }) => number === flightNumber).cons,
 			outputDirectoryPath,
 			archiveDirectoryPath,
 			headless
 		});
+		if (!result?.path) {
+			flight.status = 'error';
+			return;
+		}
+		flight.path = result.path;
+		flight.status = 'done';
 	}
+	$inspect(output);
 </script>
 
 {#if config}

@@ -9,9 +9,7 @@ const api = {
 			outputDirectoryPath: string;
 			archiveDirectoryPath: string;
 			headless: boolean;
-		}) => ipcRenderer.send('laneToLane:run', args),
-		// receiveUpdate: (callback) =>
-		// 	ipcRenderer.on('laneToLane:update', (_event, value) => callback(_event, value)),
+		}) => ipcRenderer.invoke('laneToLane:run', args),
 		exists: (args: { flightNumber: number; outputDirectoryPath: string }) =>
 			ipcRenderer.invoke('laneToLane:exists', args),
 		cons: (args: { flightNumber: number; headless: boolean }) =>

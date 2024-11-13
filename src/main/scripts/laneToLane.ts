@@ -68,7 +68,6 @@ export async function laneToLane({
 	headless,
 	username,
 	password,
-	signal,
 	window
 }: {
 	consNumber: string;
@@ -77,27 +76,22 @@ export async function laneToLane({
 	headless: boolean;
 	username: string;
 	password: string;
-	signal: AbortSignal;
 	window: BrowserWindow;
 }) {
 	const today = getToday();
 	const yesterday = getYesterday();
 
-	if (signal.aborted) return;
 	deleteOldLaneToLanes(yesterday, outputDirectoryPath, window);
 
-	if (consNumber == undefined) return;
-	if (signal.aborted) return;
+	if (consNumber == undefined) return undefined;
 	const downloadData = await downloadReportData({
 		consNumber,
-		signal,
 		username,
 		password,
 		headless
 	});
 
-	if (signal.aborted) return;
-	await saveOutput(today, downloadData, outputDirectoryPath, archiveDirectoryPath, window);
+	return await saveOutput(today, downloadData, outputDirectoryPath, archiveDirectoryPath, window);
 }
 
 export async function laneToLaneExists({
@@ -217,13 +211,11 @@ async function lookupConsFromFlight({
 
 async function downloadReportData({
 	consNumber,
-	signal,
 	username,
 	password,
 	headless
 }: {
 	consNumber: number | string;
-	signal: AbortSignal;
 	username: string;
 	password: string;
 	headless: boolean;
@@ -232,16 +224,12 @@ async function downloadReportData({
 		(async () => {
 			while (true) {
 				try {
-					if (signal.aborted) return;
-
 					const browser = await chromium.launch({ headless });
 					const page = await browser.newPage();
 					await page.goto(
 						'https://myapps-atl03.secure.fedex.com/consreport/displayReportMenuPage.do'
 					);
 					await signIn(page, username, password);
-
-					if (signal.aborted) return;
 
 					const dropdown = page.locator('select[name="reportType"]');
 					const selectReportButton = page.locator('input[value="Select Report"]');
@@ -259,9 +247,7 @@ async function downloadReportData({
 					await queryReportButton.click();
 					await page.bringToFront();
 
-					if (signal.aborted) return;
-
-					while (!signal.aborted) {
+					while (true) {
 						try {
 							await reportError.waitFor({ timeout: 10 });
 							browser.close();
@@ -277,8 +263,6 @@ async function downloadReportData({
 						}
 					}
 
-					if (signal.aborted) return;
-
 					const downloadPromise = page.waitForEvent('download');
 					await link.click();
 					const download = await downloadPromise;
@@ -291,11 +275,6 @@ async function downloadReportData({
 				} catch {}
 			}
 		})();
-
-		signal.addEventListener('abort', () => {
-			console.log('abort received by download');
-			reject(new DOMException('User aborted', 'AbortError'));
-		});
 	});
 }
 
@@ -384,13 +363,11 @@ async function saveOutput(
 		);
 	}
 
-	window.webContents.send('laneToLane:update', {
+	console.log(`Flight: ${flight} complete.`);
+	return {
 		number: parseInt(flight),
-		status: 'done',
 		path: `${outputDirectoryPath}/F${flight} ${dests[flight]} ${today.toLocaleDateString('en-us', {
 			month: '2-digit'
 		})}${today.toLocaleDateString('en-us', { day: '2-digit' })}.xlsx`
-	});
-
-	console.log(`Flight: ${flight} complete.`);
+	};
 }

@@ -32,8 +32,8 @@
 	});
 
 	function runAll() {
-		shippers.filter(({ selected }) => selected).forEach(runShipper);
-		outbounds.filter(({ selected }) => selected).forEach(runShipper);
+		shippers.filter(({ active, selected }) => active && selected).forEach(runShipper);
+		outbounds.filter(({ active, selected }) => active && selected).forEach(runShipper);
 	}
 
 	async function runShipper(shipper: Shipper) {

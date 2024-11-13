@@ -66,27 +66,23 @@ function createWindow(): void {
 		return { action: 'deny' };
 	});
 
-	var controller = new AbortController();
-	var { signal } = controller;
-
 	// IPC
-	ipcMain.on(
+	ipcMain.handle(
 		'laneToLane:run',
 		async (_, { consNumber, outputDirectoryPath, archiveDirectoryPath, headless }) =>
-			await laneToLane({
+			laneToLane({
 				consNumber,
 				outputDirectoryPath,
 				archiveDirectoryPath,
 				headless,
-				signal,
 				window: mainWindow,
 				username,
 				password
 			})
 	);
-	ipcMain.handle('laneToLane:cons', async (_, { flightNumber, headless }) => {
-		return await getCONSNumber({ flightNumber, headless, username, password });
-	});
+	ipcMain.handle('laneToLane:cons', async (_, { flightNumber, headless }) =>
+		getCONSNumber({ flightNumber, headless, username, password })
+	);
 	ipcMain.handle('laneToLane:exists', (_, args) => laneToLaneExists(args));
 
 	ipcMain.handle('limbo:run', async (_, args) => await limbo(args));

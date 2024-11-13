@@ -82,15 +82,20 @@ export async function monitorShipper(inPath: string, outPath: string, headless: 
 
 	const consLocIndex = monitorConfig.fields.findIndex((val) => val === 'CONS Loc Latest') + 5;
 	function after0200() {
-		if (new Date(Date.now()).getHours() < 2) return false;
-		if (new Date(Date.now()).getHours() > 10) return false;
-		return false;
+		const hours = new Date(Date.now()).getHours();
+		if (hours < 2) return false;
+		if (hours > 10) return false;
+		return true;
 	}
 	const sortedRows = todaySheet
 		.getRows(1, todaySheet.rowCount)
 		?.map(({ values }) => values)
 		?.filter((values) => {
-			if (values[2].startsWith('X') && after0200() && values[consLocIndex] === '') {
+			if (
+				!values[2].toString().startsWith('N') &&
+				after0200() &&
+				values[consLocIndex] === undefined
+			) {
 				return false;
 			} else {
 				return true;

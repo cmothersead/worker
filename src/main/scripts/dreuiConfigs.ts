@@ -13,7 +13,8 @@ export const scorecardConfig = {
 		'SIPS All',
 		'POD DDEX Time All',
 		'POD DDEX Date All',
-		'VANS All'
+		'VANS All',
+		'CONS Flt to IND Latest'
 	]
 };
 export const commCommentAllConfig = {

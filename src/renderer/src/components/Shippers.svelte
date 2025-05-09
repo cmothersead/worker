@@ -2,6 +2,7 @@
 	import Icon from '@iconify/svelte';
 	import { statusIcons, type Cache, type Config, type ShipperConfig } from '.';
 	import { onMount } from 'svelte';
+	import { getToday } from '../../../main/scripts';
 
 	interface ShipperResult {
 		name: string;
@@ -33,9 +34,9 @@
 		criticalOutput.reduce((prev, { count }) => (count == undefined ? prev : prev + count), 0)
 	);
 	let checkAll = $state(true);
-	console.log('');
 
 	onMount(async () => {
+		console.log('onMount started.');
 		config = fullConfig.shippers;
 		criticalShippers = config.criticalShippers;
 		preAlerts = config.preAlerts;
@@ -43,8 +44,9 @@
 
 		criticalOutput = criticalShippers.map((shipper) => ({
 			...shipper,
-			status: cache.shippers[shipper.name]?.count === undefined ? 'loading' : 'done',
-			count: cache.shippers[shipper.name]?.count
+			status:
+				cache?.shippers && cache.shippers[shipper.name]?.count === undefined ? 'loading' : 'done',
+			count: cache?.shippers && cache.shippers[shipper.name]?.count
 		}));
 		criticalOutput
 			.filter(({ status }) => status === 'loading')
@@ -55,8 +57,9 @@
 			});
 		preAlertOutput = preAlerts.map((shipper) => ({
 			...shipper,
-			status: cache.shippers[shipper.name]?.count === undefined ? 'loading' : 'done',
-			count: cache.shippers[shipper.name]?.count
+			status:
+				cache?.shippers && cache.shippers[shipper.name]?.count === undefined ? 'loading' : 'done',
+			count: cache?.shippers && cache.shippers[shipper.name]?.count
 		}));
 		preAlertOutput
 			.filter(({ status }) => status === 'loading')
@@ -65,6 +68,8 @@
 				shipper.count = count;
 				shipper.status = count != undefined ? 'done' : 'none';
 			});
+		console.log('hello?');
+		schedule();
 	});
 
 	$effect(() => {
@@ -117,6 +122,30 @@
 				preAlert: preAlerts.some(({ name }) => shipper === name)
 			}))
 		);
+	}
+
+	async function schedule() {
+		console.log('here now yes');
+		const today = getToday();
+		const dateString = `${today.toLocaleDateString('en-us', { month: '2-digit' })}${today.toLocaleDateString('en-us', { day: '2-digit' })}`;
+		if (
+			await window.api.file.exists(
+				`C:/Users/5260673/OneDrive - MyFedEx/SAA/CST Beginning of Night/Shipments by Outbound - ${dateString}.xlsx`
+			)
+		)
+			return;
+		const now = new Date(Date.now());
+		const hours = now.getHours();
+		const minutes = now.getMinutes();
+		console.log(hours, minutes);
+		if ((hours <= 23 && hours >= 10) || (hours === 23 && minutes < 30)) {
+			console.log('scheduling CST file process');
+			const timeUntil = (23 - hours) * 3600000 + (40 - minutes) * 60000;
+			console.log(timeUntil);
+			await new Promise((r) => setTimeout(r, timeUntil));
+			console.log('schedule complete 1');
+		}
+		cstReport();
 	}
 </script>
 
@@ -176,21 +205,21 @@
 									</div>
 								</div>
 								<div class="flex items-center gap-2">
-									<div class="text-xs" class:invisible={output[i].count === undefined}>
-										{criticalOutput[i].count ?? '-'}
+									<div class="text-xs" class:invisible={output[i]?.count === undefined}>
+										{criticalOutput[i]?.count ?? '-'}
 									</div>
 									<div class="group">
-										<span class:hidden={criticalOutput[i].status != 'loading'}>
+										<span class:hidden={criticalOutput[i]?.status != 'loading'}>
 											<Icon icon={statusIcons['loading']} class="" />
 										</span>
-										<span class="group-hover:hidden" class:hidden={output[i].status != 'error'}>
+										<span class="group-hover:hidden" class:hidden={output[i]?.status != 'error'}>
 											<Icon icon={statusIcons['error']} class="text-red-600" />
 										</span>
-										<span class="group-hover:hidden" class:hidden={output[i].status != 'done'}>
+										<span class="group-hover:hidden" class:hidden={output[i]?.status != 'done'}>
 											<Icon icon={statusIcons['done']} class="text-green-600" />
 										</span>
 										<button
-											class:hidden={output[i].status != 'none'}
+											class:hidden={output[i]?.status != 'none'}
 											class="block group-hover:block cursor-pointer"
 											onclick={() => {}}
 										>

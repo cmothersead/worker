@@ -2,6 +2,7 @@
 	import Icon from '@iconify/svelte';
 	import { LaneToLanes, Limbo, Monitor, Shippers } from './components';
 	import { onMount } from 'svelte';
+	import Scorecard from './components/Scorecard.svelte';
 
 	const email = 'colin.mothersead@fedex.com';
 	let config: any = $state();
@@ -15,7 +16,7 @@
 	});
 
 	$effect(() => {
-		if (cache) window.api.config.update(JSON.parse(JSON.stringify(config)));
+		if (config) window.api.config.update(JSON.parse(JSON.stringify(config)));
 	});
 	$effect(() => {
 		if (cache) window.api.cache.update(JSON.parse(JSON.stringify(cache)));
@@ -48,6 +49,7 @@
 			<Limbo {config} {cache} />
 			<Monitor {config} {cache} />
 			<Shippers {config} {cache} />
+			<Scorecard />
 		</div>
 		<div class="flex-grow bg-slate-400 rounded-lg py-4 px-6" class:hidden={!settings}>
 			<h1 class="text-3xl font-semibold">Settings</h1>

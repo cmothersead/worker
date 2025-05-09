@@ -1,5 +1,5 @@
 <script lang="ts">
-	let { headless = true } = $props();
+	let { headless = false } = $props();
 	let areaText = $state('');
 	let trackingNumbers = $derived(
 		areaText

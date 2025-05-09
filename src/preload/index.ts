@@ -6,6 +6,7 @@ const api = {
 	laneToLane: {
 		run: (args: {
 			consNumber: string;
+			templateFilePath: string;
 			outputDirectoryPath: string;
 			archiveDirectoryPath: string;
 			headless: boolean;
@@ -48,9 +49,11 @@ const api = {
 		update: (updateObject) => ipcRenderer.send('config:update', updateObject)
 	},
 	file: {
-		open: (path: string) => ipcRenderer.send('file:open', path)
+		open: (path: string) => ipcRenderer.send('file:open', path),
+		exists: (path: string) => ipcRenderer.invoke('file:exists', path)
 	},
 	dialog: {
+		file: () => ipcRenderer.invoke('dialog:file'),
 		folder: () => ipcRenderer.invoke('dialog:folder')
 	}
 };

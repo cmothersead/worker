@@ -7,6 +7,7 @@ export declare global {
 			laneToLane: {
 				run: (args: {
 					consNumber: string;
+					templateFilePath: string;
 					outputDirectoryPath: string;
 					archiveDirectoryPath: string;
 					headless: boolean;
@@ -56,8 +57,10 @@ export declare global {
 			};
 			file: {
 				open: (path: string) => void;
+				exists: (path: string) => Promise<boolean>;
 			};
 			dialog: {
+				file: () => Promise<string>;
 				folder: () => Promise<string>;
 			};
 		};

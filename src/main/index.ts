@@ -69,9 +69,13 @@ function createWindow(): void {
 	// IPC
 	ipcMain.handle(
 		'laneToLane:run',
-		async (_, { consNumber, outputDirectoryPath, archiveDirectoryPath, headless }) =>
+		async (
+			_,
+			{ consNumber, templateFilePath, outputDirectoryPath, archiveDirectoryPath, headless }
+		) =>
 			laneToLane({
 				consNumber,
+				templateFilePath,
 				outputDirectoryPath,
 				archiveDirectoryPath,
 				headless,
@@ -110,6 +114,9 @@ function createWindow(): void {
 	});
 
 	ipcMain.on('file:open', (_, path) => shell.openPath(path));
+	ipcMain.handle('file:exists', (_, path) => existsSync(path));
+
+	ipcMain.handle('dialog:file', () => dialog.showOpenDialogSync({ properties: ['openFile'] }));
 	ipcMain.handle('dialog:folder', () =>
 		dialog.showOpenDialogSync({ properties: ['openDirectory'] })
 	);

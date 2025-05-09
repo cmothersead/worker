@@ -4,7 +4,6 @@ import { chromium, type Page } from 'playwright';
 import { BrowserWindow } from 'electron';
 import { getToday, getYesterday } from '.';
 
-const laneToLaneTemplatePath = 'C:/Users/5260673/OneDrive - MyFedEx/Documents/lanetolane.xlsx';
 const dests = {
 	1623: 'BUR',
 	1633: 'BUR',
@@ -58,11 +57,14 @@ const dests = {
 	1678: 'PHX',
 	1679: 'IAD',
 	1681: 'MCO',
-	1682: 'BNA'
+	1682: 'BNA',
+	22: 'ANC',
+	9: 'STN'
 };
 
 export async function laneToLane({
 	consNumber,
+	templateFilePath,
 	outputDirectoryPath,
 	archiveDirectoryPath,
 	headless,
@@ -71,6 +73,7 @@ export async function laneToLane({
 	window
 }: {
 	consNumber: string;
+	templateFilePath: string;
 	outputDirectoryPath: string;
 	archiveDirectoryPath: string;
 	headless: boolean;
@@ -83,7 +86,9 @@ export async function laneToLane({
 
 	deleteOldLaneToLanes(yesterday, outputDirectoryPath, window);
 
+	console.log('downloading data');
 	if (consNumber == undefined) return undefined;
+	console.log('cons number', consNumber);
 	const downloadData = await downloadReportData({
 		consNumber,
 		username,
@@ -91,7 +96,14 @@ export async function laneToLane({
 		headless
 	});
 
-	return await saveOutput(today, downloadData, outputDirectoryPath, archiveDirectoryPath, window);
+	console.log('saving output');
+	return await saveOutput({
+		today,
+		dataString: downloadData,
+		templateFilePath,
+		outputDirectoryPath,
+		archiveDirectoryPath
+	});
 }
 
 export async function laneToLaneExists({
@@ -175,17 +187,23 @@ async function lookupConsFromFlight({
 	});
 	const browser = await chromium.launch({ headless });
 	const page = await browser.newPage();
-	await page.goto('https://myapps-atl03.secure.fedex.com/consreport/explorer/');
+	await page.goto('https://myapps-atl03.secure.fedex.com/eShipmentGUI/DisplayLinkHandler?id=5');
 
-	signIn(page, username, password);
+	await signIn(page, username, password);
 
-	const destinationTextbox = page.locator('input[name="destination"]');
-	const startDateSelect = page.locator('#currentDateSelectBox');
-	const endDateSelect = page.locator('#dateBackToSelectBox');
-	const searchButton = page.locator('input[value="Search"]');
-	const flightNumberColumn = page.locator('td:nth-child(8)');
-	const consNumberColumn = page.locator('td:first-child > a');
+	const consExplorerLink = page
+		.frameLocator('#contentFrame')
+		.locator('a[href="/consreport/explorer"]');
+	const destinationTextbox = page
+		.frameLocator('#contentFrame')
+		.locator('input[name="destination"]');
+	const startDateSelect = page.frameLocator('#contentFrame').locator('#currentDateSelectBox');
+	const endDateSelect = page.frameLocator('#contentFrame').locator('#dateBackToSelectBox');
+	const searchButton = page.frameLocator('#contentFrame').locator('input[value="Search"]');
+	const flightNumberColumn = page.frameLocator('#contentFrame').locator('td:nth-child(8)');
+	const consNumberColumn = page.frameLocator('#contentFrame').locator('td:first-child > a');
 
+	await consExplorerLink.click();
 	await destinationTextbox.fill('INDH');
 	await startDateSelect.selectOption(todayString);
 	await endDateSelect.selectOption(todayString);
@@ -220,73 +238,82 @@ async function downloadReportData({
 	password: string;
 	headless: boolean;
 }) {
-	return await new Promise<string>((resolve, reject) => {
-		(async () => {
+	while (true) {
+		try {
+			const browser = await chromium.launch({ headless });
+			const page = await browser.newPage();
+			await page.goto('https://myapps-atl03.secure.fedex.com/eShipmentGUI/DisplayLinkHandler?id=5');
+			await signIn(page, username, password);
+
+			const dropdown = page.frameLocator('#contentFrame').locator('select[name="reportType"]');
+			const selectReportButton = page
+				.frameLocator('#contentFrame')
+				.locator('input[value="Select Report"]');
+			const consNumbersField = page
+				.frameLocator('#contentFrame')
+				.locator('textarea[name="delimitedTrackingNumber"]');
+			const nestedCheckbox = page
+				.frameLocator('#contentFrame')
+				.locator('input[name="processNestedConsFlag"]');
+			const queryReportButton = page
+				.frameLocator('#contentFrame')
+				.locator('input[value="Query Report"]');
+			const link = page
+				.frameLocator('#contentFrame')
+				.locator(
+					`a[href="/consreport/reportResultAction.do?method=exportCSV&consNumber=${consNumber}"]`
+				);
+			const reportError = page.getByText('An error has occurred. Please try again.');
+			await dropdown.selectOption('ursalane');
+			await selectReportButton.click();
+			await consNumbersField.fill(consNumber.toString());
+			await nestedCheckbox.click();
+			await queryReportButton.click();
+			await page.bringToFront();
+
 			while (true) {
 				try {
-					const browser = await chromium.launch({ headless });
-					const page = await browser.newPage();
-					await page.goto(
-						'https://myapps-atl03.secure.fedex.com/consreport/displayReportMenuPage.do'
-					);
-					await signIn(page, username, password);
-
-					const dropdown = page.locator('select[name="reportType"]');
-					const selectReportButton = page.locator('input[value="Select Report"]');
-					const consNumbersField = page.locator('textarea[name="delimitedTrackingNumber"]');
-					const nestedCheckbox = page.locator('input[name="processNestedConsFlag"]');
-					const queryReportButton = page.locator('input[value="Query Report"]');
-					const link = page.locator(
-						`a[href="/consreport/reportResultAction.do?method=exportCSV&consNumber=${consNumber}"]`
-					);
-					const reportError = page.getByText('An error has occurred. Please try again.');
-					await dropdown.selectOption('ursalane');
-					await selectReportButton.click();
-					await consNumbersField.fill(consNumber.toString());
-					await nestedCheckbox.click();
-					await queryReportButton.click();
-					await page.bringToFront();
-
-					while (true) {
-						try {
-							await reportError.waitFor({ timeout: 10 });
-							browser.close();
-							break;
-						} catch (error: any) {
-							if (error.name !== 'TimeoutError') console.error(error);
-						}
-						try {
-							await link.waitFor({ timeout: 1000 });
-							break;
-						} catch (error: any) {
-							if (error.name !== 'TimeoutError') console.error(error);
-						}
-					}
-
-					const downloadPromise = page.waitForEvent('download');
-					await link.click();
-					const download = await downloadPromise;
-					const path = await download.path();
-					const data = readFileSync(path).toString();
-					await browser.close();
-
-					resolve(data);
+					await reportError.waitFor({ timeout: 10 });
+					browser.close();
 					break;
-				} catch {}
+				} catch (error: any) {
+					if (error.name !== 'TimeoutError') console.error(error);
+				}
+				try {
+					await link.waitFor({ timeout: 1000 });
+					break;
+				} catch (error: any) {
+					if (error.name !== 'TimeoutError') console.error(error);
+				}
 			}
-		})();
-	});
+
+			const downloadPromise = page.waitForEvent('download');
+			await link.click();
+			const download = await downloadPromise;
+			const path = await download.path();
+			const data = readFileSync(path).toString();
+			await browser.close();
+
+			return data;
+		} catch {}
+	}
 }
 
-async function saveOutput(
-	today: Date,
-	dataString: string,
-	outputDirectoryPath: string,
-	archiveDirectoryPath: string,
-	window: BrowserWindow
-) {
-	const source = new AdmZip(laneToLaneTemplatePath);
-	const sheet = source.getEntry('xl/worksheets/sheet5.xml');
+async function saveOutput({
+	today,
+	dataString,
+	templateFilePath,
+	outputDirectoryPath,
+	archiveDirectoryPath
+}: {
+	today: Date;
+	dataString: string;
+	templateFilePath: string;
+	outputDirectoryPath: string;
+	archiveDirectoryPath: string;
+}) {
+	const source = new AdmZip(templateFilePath);
+	const sheet = source.getEntry('xl/worksheets/sheet4.xml');
 	let flight = '';
 	let output = '<sheetData>';
 	const lines = dataString.split('\n');

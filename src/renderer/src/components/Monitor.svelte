@@ -1,7 +1,15 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import SettingsButton from './SettingsButton.svelte';
-	import type { Cache, Config, MonitorConfig, Shipper, ShipperResult } from '.';
+	import {
+		statusIcons,
+		type Cache,
+		type Config,
+		type MonitorConfig,
+		type Shipper,
+		type ShipperResult
+	} from '.';
+	import Icon from '@iconify/svelte';
 
 	interface Props {
 		config: Config;
@@ -38,21 +46,21 @@
 
 	async function runShipper(shipper: Shipper) {
 		const { inPath, outPath } = shipper;
-		// const result = results[shipper.name];
-		// if (result) {
-		// 	result.loading = true;
-		// }
+		const result = results[shipper.name];
+		if (result) {
+			result.loading = true;
+		}
 		const { pieceCount, scannedCount } = await window.api.monitor.run({
 			data: { inPath, outPath },
 			headless
 		});
-		results[shipper.name] = { pieceCount, scannedCount };
+		results[shipper.name] = { pieceCount, scannedCount, loading: false };
 	}
 
 	async function schedule() {
 		while (config.automatic) {
 			await new Promise((r) => setTimeout(r, 300000));
-			console.log(Date.now());
+			runAll();
 		}
 	}
 
@@ -139,13 +147,15 @@
 {/snippet}
 
 {#snippet shipperModule(shipper: Shipper)}
-	{@const result = results[shipper.name]}
+	{@const result = results[shipper.name] ?? {}}
 	<div class="bg-slate-100 px-4 py-2 rounded">
 		<div class="flex justify-between gap-2 items-center">
 			<button class="font-bold" onclick={() => openFile(shipper.outPath)}>
 				{shipper.name}
 			</button>
-			{#if result?.pieceCount}
+			{#if result.loading}
+				<Icon icon={statusIcons['loading']} />
+			{:else if result?.pieceCount}
 				<button onclick={() => (config.pieceCountDisplay = !config.pieceCountDisplay)}>
 					{#if config.pieceCountDisplay}
 						<span class="text-xs">{result.scannedCount}/{result.pieceCount}</span>

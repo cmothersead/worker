@@ -26,8 +26,9 @@
 	let config: LaneToLaneConfig = $state();
 	let flightNumbers = $state([]);
 	let allFlightNumbers = $state([]);
-	let outputDirectoryPath = $state('');
-	let archiveDirectoryPath = $state('');
+	let templateFilePath = $derived(config.templateFilePath);
+	let outputDirectoryPath = $derived(config.outputDirectoryPath);
+	let archiveDirectoryPath = $derived(config.archiveDirectoryPath);
 	let { showPending, showDone } = $derived(config);
 
 	let output: FlightInfo[] = $state([]);
@@ -39,8 +40,6 @@
 		config = fullConfig.laneToLane;
 		flightNumbers = config.flightNumbers;
 		allFlightNumbers = config.allFlightNumbers.sort();
-		outputDirectoryPath = config.outputDirectoryPath;
-		archiveDirectoryPath = config.archiveDirectoryPath;
 
 		if (!cache.laneToLane) cache.laneToLane = {};
 		output = flightNumbers.sort().map((flightNumber) => ({
@@ -55,6 +54,9 @@
 			.filter(({ cons }) => cons === undefined)
 			.forEach(async (flight) => {
 				flight.cons = await window.api.laneToLane.cons({ flightNumber: flight.number, headless });
+				if (config.automatic) {
+					laneToLane(flight.number);
+				}
 			});
 		output
 			.filter(({ path }) => path === undefined)
@@ -77,7 +79,7 @@
 
 	async function laneToLanes() {
 		output
-			.filter(({ status }) => status != 'loading' && status != 'done')
+			.filter(({ status, cons }) => status != 'loading' && status != 'done' && cons != undefined)
 			.map(({ number }) => laneToLane(number));
 	}
 
@@ -86,6 +88,7 @@
 		flight.status = 'loading';
 		const result = await window.api.laneToLane.run({
 			consNumber: output.find(({ number }) => number === flightNumber).cons,
+			templateFilePath,
 			outputDirectoryPath,
 			archiveDirectoryPath,
 			headless
@@ -97,7 +100,6 @@
 		flight.path = result.path;
 		flight.status = 'done';
 	}
-	$inspect(output);
 </script>
 
 {#if config}
@@ -218,12 +220,21 @@
 		<div class="flex flex-col gap-2 pe-2 overflow-y-auto">
 			<div class="bg-slate-100 p-3 rounded">
 				<div class="flex justify-between items-center">
-					<span class="text-md font-bold">Output Directory</span>
+					<span class="text-md font-bold">Template File</span>
 					{@render editButton(
-						async () => (outputDirectoryPath = (await window.api.dialog.folder()).at(0))
+						async () => (config.templateFilePath = (await window.api.dialog.file()).at(0))
 					)}
 				</div>
-				<p class="text-xs">{outputDirectoryPath}</p>
+				<p class="text-xs">{config.templateFilePath}</p>
+			</div>
+			<div class="bg-slate-100 p-3 rounded">
+				<div class="flex justify-between items-center">
+					<span class="text-md font-bold">Output Directory</span>
+					{@render editButton(
+						async () => (config.outputDirectoryPath = (await window.api.dialog.folder()).at(0))
+					)}
+				</div>
+				<p class="text-xs">{config.outputDirectoryPath}</p>
 			</div>
 			<div class="bg-slate-100 p-3 rounded">
 				<div class="flex justify-between items-center">
@@ -231,10 +242,10 @@
 						<span class="text-md font-bold">Archive Directory</span>
 					</div>
 					{@render editButton(
-						async () => (archiveDirectoryPath = (await window.api.dialog.folder()).at(0))
+						async () => (config.archiveDirectoryPath = (await window.api.dialog.folder()).at(0))
 					)}
 				</div>
-				<p class="text-xs">{archiveDirectoryPath}</p>
+				<p class="text-xs">{config.archiveDirectoryPath}</p>
 			</div>
 			<div class="bg-slate-100 p-3 rounded">
 				<h1 class="text-lg font-bold">Flights</h1>

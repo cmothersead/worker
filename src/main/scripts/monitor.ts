@@ -46,7 +46,9 @@ export async function monitorShipper(inPath: string, outPath: string, headless: 
 	const trackingNumberColumn = todaySheet.getColumn(1);
 	trackingNumberColumn.numFmt = '0';
 	trackingNumberColumn.width = 13;
-	todaySheet.spliceColumns(5, 0, ...monitorConfig.fields.map((val) => [val]));
+	if (todaySheet.findRow(1)?.values[5] != 'Tracking Number') {
+		todaySheet.spliceColumns(5, 0, ...monitorConfig.fields.map((val) => [val]));
+	}
 	todaySheet.getColumn('E').numFmt = '0';
 	todaySheet.getColumn('E').width = 13;
 	todaySheet.getColumn('H').numFmt = '0';
@@ -76,7 +78,7 @@ export async function monitorShipper(inPath: string, outPath: string, headless: 
 		row.values = [
 			...(row.values as Excel.CellValue[]).slice(1, 5),
 			...result,
-			...(row.values as Excel.CellValue[]).slice(13)
+			...(row.values as Excel.CellValue[]).slice(14)
 		];
 	});
 
@@ -92,7 +94,7 @@ export async function monitorShipper(inPath: string, outPath: string, headless: 
 		?.map(({ values }) => values)
 		?.filter((values) => {
 			if (
-				!values[2].toString().startsWith('N') &&
+				!values[2]?.toString().startsWith('N') &&
 				after0200() &&
 				values[consLocIndex] === undefined
 			) {

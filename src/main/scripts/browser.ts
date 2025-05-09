@@ -549,7 +549,7 @@ export async function dreuiSession(config, trackingNumbers: number[], headless: 
 		await optionToSelect.click();
 	}
 
-	await launchReportButton.click();
+	await launchReportButton.click({ timeout: 60000 });
 	await waitForLoad(page);
 
 	const { fields, ordering, locFilter } = config;

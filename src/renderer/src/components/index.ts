@@ -24,6 +24,7 @@ export interface Shipper {
 }
 
 export interface ShipperResult {
+	loading?: boolean;
 	pieceCount?: number;
 	scannedCount?: number;
 }
@@ -47,6 +48,7 @@ export interface LaneToLaneConfig {
 	automatic: boolean;
 	flightNumbers: number[];
 	allFlightNumbers: number[];
+	templateFilePath: string;
 	outputDirectoryPath: string;
 	archiveDirectoryPath: string;
 	showPending: boolean;

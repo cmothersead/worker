@@ -236,7 +236,7 @@ export async function aggregate(shippers: { name: string; preAlert: boolean }[])
 				station: row[3],
 				shipper:
 					shipper.name === 'Reptiles by Mack'
-						? row[16].toString().includes('06')
+						? row[16]?.toString().includes('06')
 							? 'Reptiles Ice'
 							: 'Reptiles Live'
 						: shipper.name
@@ -273,11 +273,21 @@ export async function aggregate(shippers: { name: string; preAlert: boolean }[])
 				}
 				sheet.addRow(['Tracking Number', 'Dest Station', 'Dest Ramp', 'Shipper']);
 				sheet.addRows(
-					outputs[key].filter((row) => row?.at(4) != 'Cardinal').map((row) => row?.slice(0, 5))
+					outputs[key]
+						.filter((row) => !['Cardinal', 'Humana', 'Cencora'].includes(row?.at(4)))
+						.map((row) => row?.slice(0, 5))
 				);
 				sheet.addRow([
 					'Cardinal Total:',
 					outputs[key].filter((row) => row?.at(4) === 'Cardinal').length
+				]);
+				sheet.addRow([
+					'Humana Total:',
+					outputs[key].filter((row) => row?.at(4) === 'Humana').length
+				]);
+				sheet.addRow([
+					'Cencora Total:',
+					outputs[key].filter((row) => row?.at(4) === 'Cencora').length
 				]);
 				const trackingNumberColumn = sheet.getColumn(1);
 				trackingNumberColumn.numFmt = '0';

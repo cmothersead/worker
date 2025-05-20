@@ -200,8 +200,6 @@ async function lookupConsFromFlight({
 	const startDateSelect = page.frameLocator('#contentFrame').locator('#currentDateSelectBox');
 	const endDateSelect = page.frameLocator('#contentFrame').locator('#dateBackToSelectBox');
 	const searchButton = page.frameLocator('#contentFrame').locator('input[value="Search"]');
-	const flightNumberColumn = page.frameLocator('#contentFrame').locator('td:nth-child(8)');
-	const consNumberColumn = page.frameLocator('#contentFrame').locator('td:first-child > a');
 
 	await consExplorerLink.click();
 	await destinationTextbox.fill('INDH');
@@ -210,9 +208,14 @@ async function lookupConsFromFlight({
 
 	let consNumber: string | undefined = undefined;
 	while (consNumber == undefined) {
+		console.log(1);
 		await searchButton.click();
 
+		const flightNumberColumn = page.frameLocator('#contentFrame').locator('td:nth-child(8)');
+		const consNumberColumn = page.frameLocator('#contentFrame').locator('td:first-child > a');
 		await flightNumberColumn.first().waitFor();
+		await consNumberColumn.first().waitFor();
+		await new Promise((r) => setTimeout(r, 5000));
 		const flightNumberValues = await flightNumberColumn.evaluateAll((elements) =>
 			elements.map((element) => (element as HTMLElement).innerText)
 		);
@@ -221,6 +224,7 @@ async function lookupConsFromFlight({
 			elements.map((element) => (element as HTMLElement).innerText)
 		);
 		consNumber = consNumberValues[index];
+		console.log(consNumber);
 	}
 
 	await page.close();

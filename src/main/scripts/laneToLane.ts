@@ -208,7 +208,6 @@ async function lookupConsFromFlight({
 
 	let consNumber: string | undefined = undefined;
 	while (consNumber == undefined) {
-		console.log(1);
 		await searchButton.click();
 
 		const flightNumberColumn = page.frameLocator('#contentFrame').locator('td:nth-child(8)');
@@ -224,7 +223,6 @@ async function lookupConsFromFlight({
 			elements.map((element) => (element as HTMLElement).innerText)
 		);
 		consNumber = consNumberValues[index];
-		console.log(consNumber);
 	}
 
 	await page.close();

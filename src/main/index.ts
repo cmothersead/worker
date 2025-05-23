@@ -8,7 +8,8 @@ import { scorecard } from './scripts/browser';
 import { monitorShipper } from './scripts/monitor';
 import { existsSync, readFileSync, writeFileSync } from 'fs';
 import { getExistingLIMBO, limbo } from './scripts/limbo';
-import { aggregate, checkExisting, shipper } from './scripts/shippers';
+// import { aggregate, checkExisting, shipper } from './scripts/shippers';
+import { aggregate } from './scripts/shippers';
 
 const { username, password } = readConfig();
 
@@ -90,7 +91,7 @@ function createWindow(): void {
 	ipcMain.handle('laneToLane:exists', (_, args) => laneToLaneExists(args));
 
 	ipcMain.handle('limbo:run', async (_, args) => await limbo(args));
-	ipcMain.handle('limbo:existing', async () => await getExistingLIMBO());
+	ipcMain.handle('limbo:existing', async (_, args) => await getExistingLIMBO(args));
 
 	ipcMain.handle('scorecard:run', async (_, args) => await scorecard(args));
 
@@ -98,9 +99,9 @@ function createWindow(): void {
 		monitorShipper(data.inPath, data.outPath, headless)
 	);
 
-	ipcMain.handle('shippers:run', async (_, args) => shipper(args));
+	// ipcMain.handle('shippers:run', async (_, args) => shipper(args));
 	ipcMain.on('shippers:aggregate', async (_, args) => aggregate(args));
-	ipcMain.handle('shippers:existing', async (_, args) => checkExisting(args));
+	// ipcMain.handle('shippers:existing', async (_, args) => checkExisting(args));
 
 	ipcMain.handle('cache:read', () => readCache());
 	ipcMain.on('cache:update', (_, update) => {
@@ -110,6 +111,7 @@ function createWindow(): void {
 	ipcMain.handle('config:read', () => readConfig());
 	ipcMain.on('config:update', (_, updateObject) => {
 		const config = readConfig();
+		console.log('config updated');
 		writeConfig({ ...config, ...updateObject });
 	});
 

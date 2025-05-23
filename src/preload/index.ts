@@ -17,11 +17,17 @@ const api = {
 			ipcRenderer.invoke('laneToLane:cons', args)
 	},
 	limbo: {
-		run: (args: { date: Date; untilIndex: number; headless: boolean }) =>
-			ipcRenderer.invoke('limbo:run', args),
+		run: (args: {
+			date: Date;
+			untilIndex: number;
+			headless: boolean;
+			templateFilePath: string;
+			outputDirectoryPath: string;
+			archiveDirectoryPath: string | undefined;
+		}) => ipcRenderer.invoke('limbo:run', args),
 		receiveUpdate: (callback) =>
 			ipcRenderer.on('limbo:update', (_event, value) => callback(_event, value)),
-		getExisting: () => ipcRenderer.invoke('limbo:existing')
+		getExisting: (args: string) => ipcRenderer.invoke('limbo:existing', args)
 	},
 	monitor: {
 		run: (args: { data: { inPath: string; outPath: string }; headless: boolean }) =>
@@ -35,8 +41,13 @@ const api = {
 	shippers: {
 		run: (args: { name: string; accountNumbers: string | string[]; headless: boolean }) =>
 			ipcRenderer.invoke('shippers:run', args),
-		aggregate: (args: { name: string; preAlert: boolean }[]) =>
-			ipcRenderer.send('shippers:aggregate', args),
+		aggregate: (args: {
+			shippers: string[];
+			summarizedShippers: string[];
+			shipperDirectoryPath: string;
+			preAlertDirectoryPath: string;
+			outputDirectoryPath: string;
+		}) => ipcRenderer.send('shippers:aggregate', args),
 		existing: (args: { name: string; preAlert: boolean }) =>
 			ipcRenderer.invoke('shippers:existing', args)
 	},

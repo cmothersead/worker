@@ -12,7 +12,6 @@ export declare global {
 					archiveDirectoryPath: string;
 					headless: boolean;
 				}) => Promise<any>;
-				// receiveUpdate;
 				exists: (args: {
 					flightNumber: number;
 					outputDirectoryPath: string;
@@ -20,12 +19,19 @@ export declare global {
 				cons: (args: { flightNumber: number; headless: boolean }) => Promise<string>;
 			};
 			limbo: {
-				run: (args: { date: Date; untilIndex: number; headless: boolean }) => Promise<{
+				run: (args: {
+					date: Date;
+					untilIndex: number;
+					headless: boolean;
+					templateFilePath: string;
+					outputDirectoryPath: string;
+					archiveDirectoryPath: string | undefined;
+				}) => Promise<{
 					topOrigin: { code: string; quantity: number };
 					topDestination: { code: string; quantity: number };
 				}>;
 				receiveUpdate;
-				getExisting: () => Promise<any>;
+				getExisting: (args: string) => Promise<any>;
 			};
 			monitor: {
 				run: (args: {
@@ -44,7 +50,13 @@ export declare global {
 					preAlert: boolean;
 					headless: boolean;
 				}) => Promise<number>;
-				aggregate: (args: { name: string; preAlert: boolean }[]) => void;
+				aggregate: (args: {
+					shippers: string[];
+					summarizedShippers: string[];
+					shipperDirectoryPath: string;
+					preAlertDirectoryPath: string;
+					outputDirectoryPath: string;
+				}) => void;
 				existing: (args: { name: string; preAlert: boolean }) => Promise<number>;
 			};
 			cache: {

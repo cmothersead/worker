@@ -23,7 +23,6 @@
 	let config: ShipperConfig = $state();
 	let criticalShippers = $state([]);
 	let preAlerts = $state([]);
-	let cstShippers = $state([]);
 	let criticalOutput: ShipperResult[] = $state([]);
 	let preAlertOutput: ShipperResult[] = $state([]);
 
@@ -36,11 +35,9 @@
 	let checkAll = $state(true);
 
 	onMount(async () => {
-		console.log('onMount started.');
 		config = fullConfig.shippers;
 		criticalShippers = config.criticalShippers;
 		preAlerts = config.preAlerts;
-		cstShippers = config.cstShippers;
 
 		criticalOutput = criticalShippers.map((shipper) => ({
 			...shipper,
@@ -68,7 +65,6 @@
 				shipper.count = count;
 				shipper.status = count != undefined ? 'done' : 'none';
 			});
-		console.log('hello?');
 		schedule();
 	});
 
@@ -115,17 +111,7 @@
 		await Promise.all(promises);
 	}
 
-	async function cstReport() {
-		window.api.shippers.aggregate(
-			cstShippers.map((shipper) => ({
-				name: shipper,
-				preAlert: preAlerts.some(({ name }) => shipper === name)
-			}))
-		);
-	}
-
 	async function schedule() {
-		console.log('here now yes');
 		const today = getToday();
 		const dateString = `${today.toLocaleDateString('en-us', { month: '2-digit' })}${today.toLocaleDateString('en-us', { day: '2-digit' })}`;
 		if (
@@ -145,7 +131,6 @@
 			await new Promise((r) => setTimeout(r, timeUntil));
 			console.log('schedule complete 1');
 		}
-		cstReport();
 	}
 </script>
 
@@ -154,7 +139,6 @@
 		<h1 class="text-xl font-bold">Shippers</h1>
 		<div class="flex flex-col gap-1 overflow-hidden">
 			<button class="bg-green-500" onclick={shippers}>Let's Go!</button>
-			<button class="bg-blue-500" onclick={cstReport}>CST Report</button>
 			<div class="flex items-center ps-4 gap-2">
 				<input
 					type="checkbox"

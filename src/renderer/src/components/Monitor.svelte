@@ -27,7 +27,12 @@
 	let settings = $state(false);
 
 	onMount(() => {
-		config = fullConfig.monitor;
+		config = fullConfig.monitor ?? {
+			shippers: [],
+			outbounds: [],
+			pieceCountDisplay: true,
+			automatic: true
+		};
 		shippers = config.shippers ?? [];
 		outbounds = config.outbounds ?? [];
 		results = cache.monitor ?? {};

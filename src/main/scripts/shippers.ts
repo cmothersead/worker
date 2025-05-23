@@ -1,16 +1,12 @@
 import { chromium } from 'playwright';
 import { waitForLoad } from './browser';
 import { getToday } from '.';
-import { readFileSync } from 'fs';
+import { existsSync, readFileSync } from 'fs';
 import Excel from 'exceljs';
 import _ from 'lodash';
 
 const rampConversionPath = 'C:/Users/5260673/OneDrive - MyFedEx/SAA/New Ramp Conversion.xlsx';
 const managerConversionPath = 'C:/Users/5260673/OneDrive - MyFedEx/SAA/Flight-Manager.xlsx';
-const criticalDirPath = 'C:/Users/5260673/OneDrive - MyFedEx/SAA/Critical Shippers';
-const preAlertDirPath = 'C:/Users/5260673/OneDrive - MyFedEx/SAA/- Pre-Alerts';
-const criticalDirDummyPath = 'C:/Users/5260673/OneDrive - MyFedEx/Critical Shippers';
-const preAlertDirDummyPath = 'C:/Users/5260673/OneDrive - MyFedEx/Pre Alerts';
 
 async function getRampLookup() {
 	const rampConversionWorkbook = new Excel.Workbook();
@@ -45,55 +41,55 @@ async function getManagerLookup() {
 	);
 }
 
-export async function shipper({
-	name,
-	accountNumbers,
-	preAlert,
-	headless
-}: {
-	name: string;
-	accountNumbers: string | string[];
-	preAlert: boolean;
-	headless: boolean;
-}) {
-	const today = getToday();
-	const todayString = `${today.toLocaleDateString('en-us', { month: '2-digit' })}${today.toLocaleDateString('en-us', { day: '2-digit' })}`;
-	const data = await getShipperData(accountNumbers, headless);
-	const outputPath = `${preAlert ? preAlertDirDummyPath : criticalDirDummyPath}/${name}.xlsx`;
+// export async function shipper({
+// 	name,
+// 	accountNumbers,
+// 	preAlert,
+// 	headless
+// }: {
+// 	name: string;
+// 	accountNumbers: string | string[];
+// 	preAlert: boolean;
+// 	headless: boolean;
+// }) {
+// 	const today = getToday();
+// 	const todayString = `${today.toLocaleDateString('en-us', { month: '2-digit' })}${today.toLocaleDateString('en-us', { day: '2-digit' })}`;
+// 	const data = await getShipperData(accountNumbers, headless);
+// 	const outputPath = `${preAlert ? preAlertDirDummyPath : criticalDirDummyPath}/${name}.xlsx`;
 
-	const lookup = await getRampLookup();
+// 	const lookup = await getRampLookup();
 
-	const formattedData = data.map((row) =>
-		row
-			.map((value) => (Number.isSafeInteger(parseInt(value)) ? parseInt(value) : value))
-			.toSpliced(1, 1, row[1].slice(0, 2), row[1].slice(2))
-			.toSpliced(3, 0, lookup[row[1].slice(2)]?.toString() ?? 'undefined')
-	);
-	formattedData[0][3] = 'Ramp';
+// 	const formattedData = data.map((row) =>
+// 		row
+// 			.map((value) => (Number.isSafeInteger(parseInt(value)) ? parseInt(value) : value))
+// 			.toSpliced(1, 1, row[1].slice(0, 2), row[1].slice(2))
+// 			.toSpliced(3, 0, lookup[row[1].slice(2)]?.toString() ?? 'undefined')
+// 	);
+// 	formattedData[0][3] = 'Ramp';
 
-	if (formattedData[1] === undefined) return 0;
+// 	if (formattedData[1] === undefined) return 0;
 
-	const workbook = new Excel.Workbook();
-	await workbook.xlsx.readFile(outputPath);
+// 	const workbook = new Excel.Workbook();
+// 	await workbook.xlsx.readFile(outputPath);
 
-	const sheet1 = workbook.getWorksheet('Sheet1') ?? workbook.addWorksheet('Sheet1');
-	const dateSheet = workbook.getWorksheet(todayString) ?? workbook.addWorksheet(todayString);
+// 	const sheet1 = workbook.getWorksheet('Sheet1') ?? workbook.addWorksheet('Sheet1');
+// 	const dateSheet = workbook.getWorksheet(todayString) ?? workbook.addWorksheet(todayString);
 
-	sheet1.getCell('A2').value = formattedData[1][0];
-	sheet1.getCell('B2').value = formattedData[1][1];
-	sheet1.getCell('C2').value = formattedData[1][2];
-	sheet1.getCell('D2').value = formattedData[1][3];
-	sheet1.spliceRows(
-		3,
-		sheet1.actualRowCount - 2,
-		...formattedData.slice(2).map((row) => [...row.slice(0, 4), name])
-	);
+// 	sheet1.getCell('A2').value = formattedData[1][0];
+// 	sheet1.getCell('B2').value = formattedData[1][1];
+// 	sheet1.getCell('C2').value = formattedData[1][2];
+// 	sheet1.getCell('D2').value = formattedData[1][3];
+// 	sheet1.spliceRows(
+// 		3,
+// 		sheet1.actualRowCount - 2,
+// 		...formattedData.slice(2).map((row) => [...row.slice(0, 4), name])
+// 	);
 
-	dateSheet.spliceRows(1, dateSheet.actualRowCount, ...formattedData);
-	workbook.xlsx.writeFile(outputPath);
-	console.log(`${name} done`);
-	return formattedData.length - 1;
-}
+// 	dateSheet.spliceRows(1, dateSheet.actualRowCount, ...formattedData);
+// 	workbook.xlsx.writeFile(outputPath);
+// 	console.log(`${name} done`);
+// 	return formattedData.length - 1;
+// }
 
 export async function getShipperData(accountNumbers: string | string[], headless: boolean) {
 	const browser = await chromium.launch({ headless });
@@ -197,34 +193,46 @@ export async function getShipperData(accountNumbers: string | string[], headless
 	return data;
 }
 
-export async function checkExisting(shipper: { name: string; preAlert: boolean }) {
+// export async function checkExisting(shipper: { name: string; preAlert: boolean }) {
+// 	const today = getToday();
+// 	const dateString = `${today.toLocaleDateString('en-us', { month: '2-digit' })}${today.toLocaleDateString('en-us', { day: '2-digit' })}`;
+
+// 	const inputPath = `${shipper.preAlert ? preAlertDirPath : criticalDirPath}/${shipper.name}.xlsx`;
+// 	const workbook = new Excel.Workbook();
+// 	await workbook.xlsx.readFile(inputPath);
+
+// 	const dateSheetName = workbook.worksheets.find(({ name }) => name.trim() === dateString)?.name;
+// 	if (!dateSheetName) {
+// 		console.log(`Date sheet not found in ${shipper.name}`);
+// 		return undefined;
+// 	}
+// 	return (workbook.getWorksheet(dateSheetName) as Excel.Worksheet).rowCount - 1;
+// }
+
+export async function aggregate({
+	shippers,
+	summarizedShippers,
+	shipperDirectoryPath,
+	preAlertDirectoryPath,
+	outputDirectoryPath
+}: {
+	shippers: string[];
+	summarizedShippers: string[];
+	shipperDirectoryPath: string;
+	preAlertDirectoryPath: string;
+	outputDirectoryPath: string;
+}) {
 	const today = getToday();
 	const dateString = `${today.toLocaleDateString('en-us', { month: '2-digit' })}${today.toLocaleDateString('en-us', { day: '2-digit' })}`;
 
-	const inputPath = `${shipper.preAlert ? preAlertDirPath : criticalDirPath}/${shipper.name}.xlsx`;
-	const workbook = new Excel.Workbook();
-	await workbook.xlsx.readFile(inputPath);
-
-	const dateSheetName = workbook.worksheets.find(({ name }) => name.trim() === dateString)?.name;
-	if (!dateSheetName) {
-		console.log(`Date sheet not found in ${shipper.name}`);
-		return undefined;
-	}
-	return (workbook.getWorksheet(dateSheetName) as Excel.Worksheet).rowCount - 1;
-}
-
-export async function aggregate(shippers: { name: string; preAlert: boolean }[]) {
-	const today = getToday();
-	const dateString = `${today.toLocaleDateString('en-us', { month: '2-digit' })}${today.toLocaleDateString('en-us', { day: '2-digit' })}`;
-
-	const dataPromise = shippers.map(async (shipper) => {
-		const inputPath = `${shipper.preAlert ? preAlertDirPath : criticalDirPath}/${shipper.name}.xlsx`;
+	const dataPromise = [...shippers, ...summarizedShippers].map(async (shipper) => {
+		const inputPath = `${existsSync(`${preAlertDirectoryPath}/${shipper}.xlsx`) ? preAlertDirectoryPath : shipperDirectoryPath}/${shipper}.xlsx`;
 		const workbook = new Excel.Workbook();
 		await workbook.xlsx.readFile(inputPath);
 
 		const dateSheetName = workbook.worksheets.find(({ name }) => name.trim() === dateString)?.name;
 		if (!dateSheetName) {
-			console.log(`Date sheet not found in ${shipper.name}`);
+			console.log(`Date sheet not found in ${shipper}`);
 			return [];
 		}
 		const dateSheet = workbook.getWorksheet(dateSheetName);
@@ -235,11 +243,11 @@ export async function aggregate(shippers: { name: string; preAlert: boolean }[])
 				trackingNumber: row[1],
 				station: row[3],
 				shipper:
-					shipper.name === 'Reptiles by Mack'
+					shipper === 'Reptiles by Mack'
 						? row[16]?.toString().includes('06')
 							? 'Reptiles Ice'
 							: 'Reptiles Live'
-						: shipper.name
+						: shipper
 			}))
 			.filter(({ trackingNumber }) => trackingNumber != undefined);
 	});
@@ -274,21 +282,28 @@ export async function aggregate(shippers: { name: string; preAlert: boolean }[])
 				sheet.addRow(['Tracking Number', 'Dest Station', 'Dest Ramp', 'Shipper']);
 				sheet.addRows(
 					outputs[key]
-						.filter((row) => !['Cardinal', 'Humana', 'Cencora'].includes(row?.at(4)))
+						// .filter((row) => !['Cardinal', 'Humana', 'Cencora'].includes(row?.at(4)))
+						.filter((row) => !summarizedShippers.includes(row?.at(4)))
 						.map((row) => row?.slice(0, 5))
 				);
-				sheet.addRow([
-					'Cardinal Total:',
-					outputs[key].filter((row) => row?.at(4) === 'Cardinal').length
-				]);
-				sheet.addRow([
-					'Humana Total:',
-					outputs[key].filter((row) => row?.at(4) === 'Humana').length
-				]);
-				sheet.addRow([
-					'Cencora Total:',
-					outputs[key].filter((row) => row?.at(4) === 'Cencora').length
-				]);
+				summarizedShippers.forEach((shipper) =>
+					sheet.addRow([
+						`${shipper} Total:`,
+						outputs[key].filter((row) => row?.at(4) === shipper).length
+					])
+				);
+				// sheet.addRow([
+				// 	'Cardinal Total:',
+				// 	outputs[key].filter((row) => row?.at(4) === 'Cardinal').length
+				// ]);
+				// sheet.addRow([
+				// 	'Humana Total:',
+				// 	outputs[key].filter((row) => row?.at(4) === 'Humana').length
+				// ]);
+				// sheet.addRow([
+				// 	'Cencora Total:',
+				// 	outputs[key].filter((row) => row?.at(4) === 'Cencora').length
+				// ]);
 				const trackingNumberColumn = sheet.getColumn(1);
 				trackingNumberColumn.numFmt = '0';
 				trackingNumberColumn.width = 16;
@@ -298,7 +313,7 @@ export async function aggregate(shippers: { name: string; preAlert: boolean }[])
 			})
 	);
 	await outWorkbook.xlsx.writeFile(
-		`C:/Users/5260673/OneDrive - MyFedEx/SAA/CST Beginning of Night/Shipments by Outbound - ${dateString}.xlsx`
+		`${outputDirectoryPath}/Shipments by Outbound - ${dateString}.xlsx`
 	);
 	console.log('done');
 }

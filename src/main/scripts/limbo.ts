@@ -6,10 +6,6 @@ import { dreuiReport } from './browser';
 import { limboConfig } from './dreuiConfigs';
 import { getToday, getYesterday } from '.';
 
-const blankTemplate = 'C:/Users/5260673/ONeDrive - MyFedEx/Documents/blank.xlsx';
-const limboOutputDirPath = 'C:/Users/5260673/ONeDrive - MyFedEx/Communication/Reports/LIMBO';
-const limboArchiveDirPath = 'C:/Users/5260673/ONeDrive - MyFedEx/SAA/LIMBO';
-
 async function waitForLoad(page: Page) {
 	const loader = page.locator('svg[class="sf-svg-loader-12x12"]');
 
@@ -20,10 +16,16 @@ async function waitForLoad(page: Page) {
 export async function limbo({
 	date,
 	untilIndex,
+	templateFilePath,
+	outputDirectoryPath,
+	archiveDirectoryPath,
 	headless
 }: {
 	date: Date;
 	untilIndex: number;
+	templateFilePath: string;
+	outputDirectoryPath: string;
+	archiveDirectoryPath: string | undefined;
 	headless: boolean;
 }) {
 	const browser = await chromium.launch({ headless });
@@ -173,7 +175,7 @@ export async function limbo({
 	console.log(`Top Destination: ${topDest} - ${topDestCount}`);
 
 	const blank = new Excel.Workbook();
-	await blank.xlsx.readFile(blankTemplate);
+	await blank.xlsx.readFile(templateFilePath);
 	blank.removeWorksheet('Sheet1');
 
 	console.log('Researching LIMBO data...');
@@ -271,36 +273,40 @@ export async function limbo({
 		}
 	});
 
-	const monthDirPath = `${limboArchiveDirPath}/LIMBO ${today.toLocaleDateString('en-us', {
-		month: 'short',
-		year: 'numeric'
-	})}`;
-	const archiveFilePath = `${monthDirPath}/LIMBO - ${today.toLocaleDateString('en-us', {
+	const shareFilePath = `${outputDirectoryPath}/LIMBO - ${today.toLocaleDateString('en-us', {
 		month: '2-digit'
 	})}${today.toLocaleDateString('en-us', {
 		day: '2-digit'
 	})}.xlsx`;
-	const shareFilePath = `${limboOutputDirPath}/LIMBO - ${today.toLocaleDateString('en-us', {
-		month: '2-digit'
-	})}${today.toLocaleDateString('en-us', {
-		day: '2-digit'
-	})}.xlsx`;
+	deleteOldLIMBO(outputDirectoryPath);
+	await blank.xlsx.writeFile(shareFilePath);
 
-	if (!existsSync(monthDirPath)) {
-		mkdirSync(monthDirPath);
+	if (archiveDirectoryPath) {
+		const monthDirPath = `${archiveDirectoryPath}/LIMBO ${today.toLocaleDateString('en-us', {
+			month: 'short',
+			year: 'numeric'
+		})}`;
+		const archiveFilePath = `${monthDirPath}/LIMBO - ${today.toLocaleDateString('en-us', {
+			month: '2-digit'
+		})}${today.toLocaleDateString('en-us', {
+			day: '2-digit'
+		})}.xlsx`;
+
+		if (!existsSync(monthDirPath)) {
+			mkdirSync(monthDirPath);
+		}
+		copyFileSync(shareFilePath, archiveFilePath);
 	}
-	await blank.xlsx.writeFile(archiveFilePath);
-	deleteOldLIMBO();
-	copyFileSync(archiveFilePath, shareFilePath);
+
 	return {
 		topOrigin: { code: topOrigin, quantity: topOriginCount },
 		topDestination: { code: topDest, quantity: topDestCount }
 	};
 }
 
-export function deleteOldLIMBO() {
+export function deleteOldLIMBO(outputDirectoryPath: string) {
 	const yesterday = getYesterday();
-	const old = readdirSync(limboOutputDirPath).filter((fileName) =>
+	const old = readdirSync(outputDirectoryPath).filter((fileName) =>
 		fileName.includes(
 			`${yesterday.toLocaleDateString('en-us', {
 				month: '2-digit'
@@ -309,18 +315,15 @@ export function deleteOldLIMBO() {
 	);
 
 	for (const oldFile of old) {
-		unlinkSync(`${limboOutputDirPath}/${oldFile}`);
+		unlinkSync(`${outputDirectoryPath}/${oldFile}`);
 	}
 }
 
-export async function getExistingLIMBO() {
+export async function getExistingLIMBO(outputDirectoryPath: string) {
 	const today = getToday();
-	const shareFilePath = `C:/Users/5260673/OneDrive - MyFedEx/Communication/Reports/LIMBO/LIMBO - ${today.toLocaleDateString(
-		'en-us',
-		{
-			month: '2-digit'
-		}
-	)}${today.toLocaleDateString('en-us', {
+	const shareFilePath = `${outputDirectoryPath}/LIMBO - ${today.toLocaleDateString('en-us', {
+		month: '2-digit'
+	})}${today.toLocaleDateString('en-us', {
 		day: '2-digit'
 	})}.xlsx`;
 

@@ -35,33 +35,59 @@
 	let { headless } = $derived(fullConfig);
 
 	let config: LimboConfig = $state();
-	let untilIndex = $state(0);
-	let { automatic } = $derived(config);
+	let { automatic, untilIndex, templateFilePath, outputDirectoryPath, archiveDirectoryPath } =
+		$derived(config);
 
 	let status: 'none' | 'loading' | 'done' | 'error' = $state('none');
 	let settings = $state(false);
 	let output: LimboCache = $state();
 
 	onMount(async () => {
+		if (fullConfig.limbo == undefined) {
+			fullConfig.limbo = {
+				untilIndex: 5,
+				automatic: false,
+				outputDirectoryPath: '',
+				archiveDirectoryPath: '',
+				templateFilePath: ''
+			};
+		}
 		config = fullConfig.limbo;
-		untilIndex = config.untilIndex;
 		output = cache?.limbo;
-		if (output?.topOrigin?.code === undefined) {
-			cache.limbo = await window.api.limbo.getExisting();
-		}
-		if (output?.topOrigin?.code != undefined) {
-			status = 'done';
-		}
-		if (automatic && status != 'done' && today.getDay() != 1) {
-			limbo();
+		if (config?.outputDirectoryPath != '') {
+			if (output?.topOrigin?.code === undefined) {
+				cache.limbo = await window.api.limbo.getExisting(config.outputDirectoryPath);
+			}
+			output = cache?.limbo;
+			if (output?.topOrigin?.code != undefined) {
+				status = 'done';
+			}
+			if (automatic && status != 'done' && today.getDay() != 1) {
+				limbo();
+			}
 		}
 	});
 
 	async function limbo() {
 		status = 'loading';
-		output = await window.api.limbo.run({ date: today, untilIndex, headless });
+		output = await window.api.limbo.run({
+			date: today,
+			untilIndex,
+			headless,
+			templateFilePath,
+			outputDirectoryPath,
+			archiveDirectoryPath
+		});
 		status = 'done';
 	}
+
+	$effect(() => {
+		if (config) {
+			console.log('LIMBO config updated');
+		}
+	});
+
+	$inspect(config);
 </script>
 
 {#if config}
@@ -86,12 +112,41 @@
 		</div>
 		{#if settings}
 			Settings
-			<div>
-				<div>
+			<div class="flex flex-col gap-1">
+				<div class="bg-slate-100 p-3 rounded">
+					<div class="flex justify-between items-center">
+						<span class="text-md font-bold">Template File</span>
+						{@render editButton(
+							async () => (config.templateFilePath = (await window.api.dialog.file()).at(0))
+						)}
+					</div>
+					<p class="text-xs">{config.templateFilePath}</p>
+				</div>
+				<div class="bg-slate-100 p-3 rounded">
+					<div class="flex justify-between items-center">
+						<span class="text-md font-bold">Output Directory</span>
+						{@render editButton(
+							async () => (config.outputDirectoryPath = (await window.api.dialog.folder()).at(0))
+						)}
+					</div>
+					<p class="text-xs">{config.outputDirectoryPath}</p>
+				</div>
+				<div class="bg-slate-100 p-3 rounded">
+					<div class="flex justify-between items-center">
+						<div>
+							<span class="text-md font-bold">Archive Directory</span>
+						</div>
+						{@render editButton(
+							async () => (config.archiveDirectoryPath = (await window.api.dialog.folder()).at(0))
+						)}
+					</div>
+					<p class="text-xs">{config.archiveDirectoryPath}</p>
+				</div>
+				<label>
 					<span class="font-bold">Include Freight Until:</span>
 					{latestValues[untilIndex].display}
-				</div>
-				<input type="range" min="0" max="7" bind:value={untilIndex} class="w-full" />
+					<input type="range" min="0" max="7" bind:value={config.untilIndex} class="w-full" />
+				</label>
 			</div>
 		{:else}
 			<div class="bg-slate-100 p-2 my-2 rounded">
@@ -122,3 +177,9 @@
 		{/if}
 	</div>
 {/if}
+
+{#snippet editButton(onclick)}
+	<button class="bg-blue-400 px-2 rounded flex items-center gap-1" {onclick}
+		><Icon icon="bxs:edit" /> Edit</button
+	>
+{/snippet}

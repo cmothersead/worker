@@ -1,3 +1,4 @@
+export { default as CST } from './CST.svelte';
 export { default as LaneToLanes } from './LaneToLanes.svelte';
 export { default as Limbo } from './Limbo.svelte';
 export { default as Monitor } from './Monitor.svelte';
@@ -35,6 +36,7 @@ export interface Config {
 	limbo: LimboConfig;
 	monitor: MonitorConfig;
 	shippers: ShipperConfig;
+	cst: CSTConfig;
 }
 
 export interface Cache {
@@ -44,10 +46,23 @@ export interface Cache {
 	shippers: ShipperCache;
 }
 
+export interface CSTConfig {
+	automatic: boolean;
+	autoStartTime: {
+		hour: number;
+		minute: number;
+	};
+	shippers: string[];
+	summarizedShippers: string[];
+	shipperDirectoryPath: string;
+	preAlertDirectoryPath: string;
+	outputDirectoryPath: string;
+}
+
 export interface LaneToLaneConfig {
 	automatic: boolean;
 	flightNumbers: number[];
-	allFlightNumbers: number[];
+	allFlightNumbers: (string | number)[];
 	templateFilePath: string;
 	outputDirectoryPath: string;
 	archiveDirectoryPath: string;
@@ -65,6 +80,9 @@ export interface LaneToLaneCache {
 export interface LimboConfig {
 	automatic: boolean;
 	untilIndex: number;
+	templateFilePath: string;
+	outputDirectoryPath: string;
+	archiveDirectoryPath: string;
 }
 
 export interface LimboCache {

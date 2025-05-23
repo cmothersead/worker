@@ -20,16 +20,14 @@
 		cache: Cache;
 	}
 
-	let { config: fullConfig, cache }: Props = $props();
+	let { config: fullConfig = $bindable(), cache }: Props = $props();
 	let { headless } = $derived(fullConfig);
 
 	let config: LaneToLaneConfig = $state();
 	let flightNumbers = $state([]);
 	let allFlightNumbers = $state([]);
-	let templateFilePath = $derived(config.templateFilePath);
-	let outputDirectoryPath = $derived(config.outputDirectoryPath);
-	let archiveDirectoryPath = $derived(config.archiveDirectoryPath);
-	let { showPending, showDone } = $derived(config);
+	let { showPending, showDone, templateFilePath, outputDirectoryPath, archiveDirectoryPath } =
+		$derived(config);
 
 	let output: FlightInfo[] = $state([]);
 
@@ -37,9 +35,72 @@
 	let search = $state('');
 
 	onMount(async () => {
-		config = fullConfig.laneToLane;
+		config = fullConfig.laneToLane ?? {
+			templateFilePath: '',
+			outputDirectoryPath: '',
+			archiveDirectoryPath: '',
+			flightNumbers: [1601, 1609, 1617, 1628, 1645, 1648, 1650, 1654, 1682],
+			allFlightNumbers: [
+				'0151',
+				'0153',
+				1600,
+				1601,
+				1602,
+				1603,
+				1604,
+				1605,
+				1606,
+				1607,
+				1608,
+				1609,
+				1610,
+				1611,
+				1612,
+				1613,
+				1614,
+				1615,
+				1617,
+				1618,
+				1619,
+				1621,
+				1622,
+				1623,
+				1624,
+				1625,
+				1627,
+				1628,
+				1630,
+				1631,
+				1633,
+				1635,
+				1638,
+				1639,
+				1642,
+				1643,
+				1645,
+				1647,
+				1648,
+				1650,
+				1654,
+				1661,
+				1664,
+				1667,
+				1669,
+				1670,
+				1676,
+				1678,
+				1679,
+				1681,
+				1682,
+				1685,
+				1686
+			],
+			automatic: true,
+			showPending: true,
+			showDone: false
+		};
 		flightNumbers = config.flightNumbers;
-		allFlightNumbers = config.allFlightNumbers.sort();
+		allFlightNumbers = config?.allFlightNumbers.sort();
 
 		if (!cache.laneToLane) cache.laneToLane = {};
 		output = flightNumbers.sort().map((flightNumber) => ({
@@ -75,6 +136,14 @@
 			cache.laneToLane = Object.fromEntries(
 				output.map(({ number, cons, path }) => [number, { cons, path }])
 			);
+	});
+
+	$effect(() => {
+		console.log('hello');
+		if (config) {
+			console.log('updated');
+			// fullConfig.laneToLane = config;
+		}
 	});
 
 	async function laneToLanes() {
@@ -260,23 +329,37 @@
 						<span class="font-bold">Active</span>
 						<div>
 							{#each flightNumbers as fNum}
-								<div class="group hover:bg-red-400 flex items-center cursor-pointer px-1">
+								<button
+									class="group hover:bg-red-400 flex items-center cursor-pointer px-1"
+									onclick={() => {
+										flightNumbers = flightNumbers.filter((value) => value != fNum).sort();
+									}}
+								>
 									{fNum}
 									<Icon icon="raphael:arrowright" class="invisible group-hover:visible" />
-								</div>
+								</button>
 							{/each}
 						</div>
 					</div>
 					<div class="flex flex-col">
 						<span class="font-bold">Inactive</span>
 						<div class="overflow-y-auto">
-							{#each allFlightNumbers.filter((value) => (search != '' ? value
-											.toString()
-											.contains(search) : true)) as fNum}
-								<div class="group hover:bg-green-400 flex items-center cursor-pointer px-1">
+							{#each allFlightNumbers
+								.filter((value) => !flightNumbers.includes(value))
+								.filter((value) => (search != '' ? value
+												.toString()
+												.contains(search) : true)) as fNum}
+								<button
+									class="group hover:bg-green-400 flex items-center cursor-pointer px-1"
+									onclick={() => {
+										if (!flightNumbers.includes(fNum)) {
+											flightNumbers = [...flightNumbers, fNum].sort();
+										}
+									}}
+								>
 									<Icon icon="raphael:arrowleft" class="invisible group-hover:visible" />
 									{fNum}
-								</div>
+								</button>
 							{/each}
 						</div>
 					</div>
